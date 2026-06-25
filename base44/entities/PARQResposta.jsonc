@@ -1,0 +1,44 @@
+{
+  "name": "PARQResposta",
+  "type": "object",
+  "properties": {
+    "alunoId": {
+      "type": "string"
+    },
+    "alunoNome": {
+      "type": "string"
+    },
+    "professorId": {
+      "type": "string"
+    },
+    "dataEnvio": {
+      "type": "string"
+    },
+    "dataResposta": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pendente",
+        "respondido"
+      ],
+      "default": "pendente"
+    },
+    "respostas": {
+      "type": "object",
+      "description": "Mapa de perguntaId -> booleano (sim/nao)"
+    },
+    "observacoes": {
+      "type": "string"
+    },
+    "lido": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "alunoId",
+    "professorId"
+  ]
+}

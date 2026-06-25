@@ -1,0 +1,52 @@
+{
+  "name": "Periodizacao",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "alunoId": {
+      "type": "string"
+    },
+    "professorId": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string"
+    },
+    "objetivo": {
+      "type": "string"
+    },
+    "dataInicio": {
+      "type": "string"
+    },
+    "duracaoTotal": {
+      "type": "number"
+    },
+    "fases": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "observacoes": {
+      "type": "string"
+    },
+    "tpmAtivo": {
+      "type": "boolean"
+    },
+    "tpmDiaInicio": {
+      "type": "number"
+    },
+    "tpmDuracao": {
+      "type": "number"
+    },
+    "cicloDias": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "nome",
+    "alunoId"
+  ]
+}

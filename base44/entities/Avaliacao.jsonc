@@ -1,0 +1,55 @@
+{
+  "name": "Avaliacao",
+  "type": "object",
+  "properties": {
+    "alunoId": {
+      "type": "string"
+    },
+    "professorId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "string"
+    },
+    "peso": {
+      "type": "number"
+    },
+    "altura": {
+      "type": "number"
+    },
+    "imc": {
+      "type": "number"
+    },
+    "percentualGordura": {
+      "type": "number"
+    },
+    "massaMagra": {
+      "type": "number"
+    },
+    "massaGorda": {
+      "type": "number"
+    },
+    "classificacaoGordura": {
+      "type": "string"
+    },
+    "dobras": {
+      "type": "object"
+    },
+    "circunferencias": {
+      "type": "object"
+    },
+    "observacoes": {
+      "type": "string"
+    },
+    "tmb": {
+      "type": "number"
+    },
+    "geb": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "alunoId",
+    "data"
+  ]
+}

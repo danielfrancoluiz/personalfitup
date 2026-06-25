@@ -1,0 +1,36 @@
+{
+  "name": "BibliotecaTreino",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "professorId": {
+      "type": "string"
+    },
+    "sessoes": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "nivel": {
+      "type": "string"
+    },
+    "objetivo": {
+      "type": "string"
+    },
+    "cor": {
+      "type": "string"
+    },
+    "pasta": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "nome"
+  ]
+}

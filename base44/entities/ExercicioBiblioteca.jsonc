@@ -1,0 +1,67 @@
+{
+  "name": "ExercicioBiblioteca",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "grupoMuscular": {
+      "type": "string"
+    },
+    "musculosSecundarios": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tipo": {
+      "type": "string"
+    },
+    "nivel": {
+      "type": "string"
+    },
+    "equipamento": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "execucao": {
+      "type": "string"
+    },
+    "dicas": {
+      "type": "string"
+    },
+    "errosComuns": {
+      "type": "string"
+    },
+    "series": {
+      "type": "string"
+    },
+    "repeticoes": {
+      "type": "string"
+    },
+    "descanso": {
+      "type": "number"
+    },
+    "videoUrl": {
+      "type": "string"
+    },
+    "gifUrl": {
+      "type": "string"
+    },
+    "professorId": {
+      "type": "string"
+    },
+    "pastaId": {
+      "type": "string"
+    },
+    "publico": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "nome"
+  ]
+}

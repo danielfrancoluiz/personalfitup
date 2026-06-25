@@ -1,0 +1,45 @@
+{
+  "name": "Produto",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "categoria": {
+      "type": "string"
+    },
+    "preco": {
+      "type": "number"
+    },
+    "precoPromocional": {
+      "type": "number"
+    },
+    "estoque": {
+      "type": "number"
+    },
+    "unidade": {
+      "type": "string"
+    },
+    "imagemUrl": {
+      "type": "string"
+    },
+    "linkLoja": {
+      "type": "string"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    },
+    "destaque": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "nome",
+    "preco"
+  ]
+}

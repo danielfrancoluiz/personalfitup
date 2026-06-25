@@ -1,0 +1,59 @@
+{
+  "name": "Aluno",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "telefone": {
+      "type": "string"
+    },
+    "dataNascimento": {
+      "type": "string"
+    },
+    "sexo": {
+      "type": "string",
+      "enum": [
+        "M",
+        "F"
+      ]
+    },
+    "peso": {
+      "type": "number"
+    },
+    "altura": {
+      "type": "number"
+    },
+    "objetivo": {
+      "type": "string"
+    },
+    "nivel": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    },
+    "professorId": {
+      "type": "string"
+    },
+    "cref": {
+      "type": "string"
+    },
+    "especialidade": {
+      "type": "string"
+    },
+    "endereco": {
+      "type": "object"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "nome"
+  ]
+}

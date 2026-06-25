@@ -1,0 +1,62 @@
+{
+  "name": "Especialista",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "especialidade": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "telefone": {
+      "type": "string"
+    },
+    "whatsapp": {
+      "type": "string"
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "valorConsulta": {
+      "type": "number"
+    },
+    "disponibilidade": {
+      "type": "string"
+    },
+    "parceiro": {
+      "type": "boolean",
+      "default": false
+    },
+    "avaliacao": {
+      "type": "number"
+    },
+    "percentualComissao": {
+      "type": "number"
+    },
+    "modeloComissao": {
+      "type": "string"
+    },
+    "observacoesComerciais": {
+      "type": "string"
+    },
+    "formasPagamento": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "imagemUrl": {
+      "type": "string"
+    },
+    "endereco": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "nome",
+    "especialidade"
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "name": "PlanoCorrida",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "alunoId": {
+      "type": "string"
+    },
+    "professorId": {
+      "type": "string"
+    },
+    "nivel": {
+      "type": "string"
+    },
+    "objetivo": {
+      "type": "string"
+    },
+    "duracaoSemanas": {
+      "type": "number"
+    },
+    "dataInicio": {
+      "type": "string"
+    },
+    "fcMaxima": {
+      "type": "string"
+    },
+    "fcRepouso": {
+      "type": "string"
+    },
+    "ritmoBase": {
+      "type": "string"
+    },
+    "distanciaSemanal": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    },
+    "sessoes": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "required": [
+    "nome",
+    "alunoId"
+  ]
+}

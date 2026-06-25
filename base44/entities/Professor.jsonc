@@ -1,0 +1,47 @@
+{
+  "name": "Professor",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "telefone": {
+      "type": "string"
+    },
+    "dataNascimento": {
+      "type": "string"
+    },
+    "sexo": {
+      "type": "string"
+    },
+    "cref": {
+      "type": "string"
+    },
+    "especialidade": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    },
+    "planoAssinatura": {
+      "type": "string"
+    },
+    "endereco": {
+      "type": "object"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    },
+    "pixDados": {
+      "type": "object",
+      "description": "Dados PIX do professor: chave, nome, cidade, banco, tipochave"
+    }
+  },
+  "required": [
+    "nome"
+  ]
+}

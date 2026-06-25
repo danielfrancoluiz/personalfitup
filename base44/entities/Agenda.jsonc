@@ -1,0 +1,38 @@
+{
+  "name": "Agenda",
+  "type": "object",
+  "properties": {
+    "titulo": {
+      "type": "string"
+    },
+    "alunoId": {
+      "type": "string"
+    },
+    "professorId": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string"
+    },
+    "data": {
+      "type": "string"
+    },
+    "hora": {
+      "type": "string"
+    },
+    "duracao": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "default": "confirmado"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "titulo",
+    "data"
+  ]
+}

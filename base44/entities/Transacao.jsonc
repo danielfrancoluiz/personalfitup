@@ -1,0 +1,43 @@
+{
+  "name": "Transacao",
+  "type": "object",
+  "properties": {
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "receita",
+        "despesa"
+      ]
+    },
+    "descricao": {
+      "type": "string"
+    },
+    "valor": {
+      "type": "number"
+    },
+    "data": {
+      "type": "string"
+    },
+    "categoria": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "professorId": {
+      "type": "string"
+    },
+    "alunoId": {
+      "type": "string"
+    },
+    "observacoes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tipo",
+    "descricao",
+    "valor",
+    "data"
+  ]
+}

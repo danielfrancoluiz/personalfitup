@@ -1,0 +1,40 @@
+{
+  "name": "SolicitacaoVinculo",
+  "type": "object",
+  "properties": {
+    "alunoId": {
+      "type": "string"
+    },
+    "alunoNome": {
+      "type": "string"
+    },
+    "alunoEmail": {
+      "type": "string"
+    },
+    "professorId": {
+      "type": "string"
+    },
+    "professorNome": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pendente",
+        "aceito",
+        "recusado"
+      ],
+      "default": "pendente"
+    },
+    "mensagem": {
+      "type": "string"
+    },
+    "dataResposta": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "alunoId",
+    "professorId"
+  ]
+}

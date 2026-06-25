@@ -1,0 +1,46 @@
+{
+  "name": "FeedbackTreino",
+  "type": "object",
+  "properties": {
+    "treinoId": {
+      "type": "string"
+    },
+    "treinoNome": {
+      "type": "string"
+    },
+    "alunoId": {
+      "type": "string"
+    },
+    "alunoNome": {
+      "type": "string"
+    },
+    "professorId": {
+      "type": "string"
+    },
+    "mensagem": {
+      "type": "string"
+    },
+    "lido": {
+      "type": "boolean",
+      "default": false
+    },
+    "alunoLeu": {
+      "type": "boolean",
+      "default": false
+    },
+    "data": {
+      "type": "string"
+    },
+    "resposta": {
+      "type": "string"
+    },
+    "dataResposta": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "treinoId",
+    "alunoId",
+    "mensagem"
+  ]
+}

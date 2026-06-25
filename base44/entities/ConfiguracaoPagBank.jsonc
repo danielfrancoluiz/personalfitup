@@ -1,0 +1,42 @@
+{
+  "name": "ConfiguracaoPagBank",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string"
+    },
+    "token": {
+      "type": "string"
+    },
+    "ambiente": {
+      "type": "string",
+      "enum": [
+        "sandbox",
+        "producao"
+      ],
+      "default": "sandbox"
+    },
+    "webhookUrl": {
+      "type": "string"
+    },
+    "notificarPagamento": {
+      "type": "boolean",
+      "default": true
+    },
+    "notificarCancelamento": {
+      "type": "boolean",
+      "default": true
+    },
+    "metodos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "parcelasMax": {
+      "type": "string",
+      "default": "12"
+    }
+  },
+  "required": []
+}

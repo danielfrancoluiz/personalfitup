@@ -1,0 +1,40 @@
+{
+  "name": "Credencial",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string"
+    },
+    "password": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "professor",
+        "aluno"
+      ]
+    },
+    "nome": {
+      "type": "string"
+    },
+    "linkedId": {
+      "type": "string"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    },
+    "autoRegistrado": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "email",
+    "password",
+    "role",
+    "nome"
+  ]
+}
