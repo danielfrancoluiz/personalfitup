@@ -29,7 +29,7 @@ const ENTITIES = {
   FeedbackTreino: 'feedbacks_treino',
   PARQResposta: 'parq_respostas',
   SolicitacaoVinculo: 'solicitacoes_vinculo',
-  ConfiguracaoPagBank: 'configuracoes_pagbank',
+  ConfiguracaoPagBank: 'configuracoes_stripe',
 };
 
 const base44 = createBase44Client({

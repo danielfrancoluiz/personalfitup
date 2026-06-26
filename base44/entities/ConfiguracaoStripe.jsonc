@@ -1,11 +1,14 @@
 {
-  "name": "ConfiguracaoPagBank",
+  "name": "ConfiguracaoStripe",
   "type": "object",
   "properties": {
-    "email": {
+    "publishableKey": {
       "type": "string"
     },
-    "token": {
+    "secretKey": {
+      "type": "string"
+    },
+    "webhookSecret": {
       "type": "string"
     },
     "ambiente": {
@@ -15,17 +18,6 @@
         "producao"
       ],
       "default": "sandbox"
-    },
-    "webhookUrl": {
-      "type": "string"
-    },
-    "notificarPagamento": {
-      "type": "boolean",
-      "default": true
-    },
-    "notificarCancelamento": {
-      "type": "boolean",
-      "default": true
     },
     "metodos": {
       "type": "array",

@@ -5,7 +5,7 @@ import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import PixProfessorConfig from '../../components/fitpro/PixProfessorConfig';
-import ModalCheckoutPagBank from '../../components/fitpro/ModalCheckoutPagBank';
+import ModalCheckoutStripe from '../../components/fitpro/ModalCheckoutStripe';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -517,9 +517,9 @@ export default function FinanceiroView() {
         <PixProfessorConfig professorId={professorId} />
       )}
 
-      {/* Modal Checkout PagBank */}
+      {/* Modal Checkout Stripe */}
       {checkoutTransacao && (
-        <ModalCheckoutPagBank
+        <ModalCheckoutStripe
           transacao={checkoutTransacao}
           aluno={alunos.find(a => a.id === checkoutTransacao.alunoId)}
           onClose={() => setCheckoutTransacao(null)}

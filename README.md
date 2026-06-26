@@ -65,10 +65,14 @@ npm run migrate:from-base44
 | Professor | professor@fitpro.com | prof123  |
 | Aluno     | aluno@fitpro.com     | aluno123 |
 
-## Webhook PagBank / Stripe
+## Webhook Stripe
 
-URL do webhook (configure no painel PagBank):
+Configure no [Dashboard Stripe](https://dashboard.stripe.com/webhooks) apontando para:
 
 ```
-https://personalfitup.com.br/api/pagbank-webhook
+https://personalfitup.com.br/api/stripe-webhook
 ```
+
+Eventos recomendados: `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded`.
+
+Defina `STRIPE_WEBHOOK_SECRET` nas variáveis de ambiente da Vercel (valor `whsec_...` do endpoint).

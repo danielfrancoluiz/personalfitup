@@ -14,7 +14,7 @@ export function getServiceSupabase() {
 
 const TABLE_MAP = {
   Transacao: 'transacoes',
-  ConfiguracaoPagBank: 'configuracoes_pagbank',
+  ConfiguracaoStripe: 'configuracoes_stripe',
 };
 
 function rowToEntity(row) {

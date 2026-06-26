@@ -17,7 +17,7 @@ const ENTITY_TABLES = {
   FeedbackTreino: 'feedbacks_treino',
   PARQResposta: 'parq_respostas',
   SolicitacaoVinculo: 'solicitacoes_vinculo',
-  ConfiguracaoPagBank: 'configuracoes_pagbank',
+  ConfiguracaoStripe: 'configuracoes_stripe',
 };
 
 function generateId() {
@@ -133,7 +133,7 @@ async function uploadFile({ file }) {
 }
 
 const FUNCTION_ENDPOINTS = {
-  pagbankCheckout: '/api/pagbank-checkout',
+  stripeCheckout: '/api/stripe-checkout',
 };
 
 async function invokeFunction(name, payload) {

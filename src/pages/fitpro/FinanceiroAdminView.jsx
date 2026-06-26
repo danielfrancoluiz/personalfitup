@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DollarSign, Plus, X, TrendingUp, Clock, AlertCircle, CheckCircle2, UserCheck, Zap, Ban, Trash2, QrCode, Save, Copy, Eye, Edit2, CreditCard } from 'lucide-react';
 import ModalIntegracaoStripe from '../../components/fitpro/ModalIntegracaoStripe';
-import ModalCheckoutStripe from '../../components/fitpro/ModalCheckoutPagBank';
+import ModalCheckoutStripe from '../../components/fitpro/ModalCheckoutStripe';
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/FitProContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
@@ -146,8 +146,8 @@ export default function FinanceiroAdminView() {
 
   const meses = [...new Set(transacoesProfessores.map(t => t.data?.slice(0, 7)))].filter(Boolean).sort().reverse();
 
-  const [abaAtiva, setAbaAtiva] = useState('professores'); // 'professores' | 'transacoes' | 'pix' | 'pagbank'
-  const [showPagBank, setShowPagBank] = useState(false);
+  const [abaAtiva, setAbaAtiva] = useState('professores'); // 'professores' | 'transacoes' | 'pix' | 'stripe'
+  const [showStripe, setShowStripe] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroMes, setFiltroMes] = useState('');
   const [filtroProfStatus, setFiltroProfStatus] = useState('todos');
@@ -339,13 +339,13 @@ export default function FinanceiroAdminView() {
           { id: 'professores', label: `👨‍🏫 Professores${countsPorStatus.vencido > 0 ? ` (${countsPorStatus.vencido} vencido${countsPorStatus.vencido > 1 ? 's' : ''})` : countsPorStatus.pendente > 0 ? ` (${countsPorStatus.pendente} vence hoje)` : ''}` },
           { id: 'transacoes', label: '💳 Transações' },
           { id: 'pix', label: '🔳 Configurar PIX' },
-          { id: 'pagbank', label: '💳 Stripe' },
+          { id: 'stripe', label: '💳 Stripe' },
         ].map(a => (
           <button key={a.id} onClick={() => setAbaAtiva(a.id)}
             className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all"
             style={{
-              background: abaAtiva === a.id ? (a.id === 'professores' && countsPorStatus.vencido > 0 ? '#ef444415' : a.id === 'professores' && countsPorStatus.pendente > 0 ? '#fbbf2415' : a.id === 'pagbank' ? '#00b94a15' : '#00d4ff15') : 'transparent',
-              color: abaAtiva === a.id ? (a.id === 'professores' && countsPorStatus.vencido > 0 ? '#ef4444' : a.id === 'professores' && countsPorStatus.pendente > 0 ? '#fbbf24' : a.id === 'pagbank' ? '#00b94a' : '#00d4ff') : '#64748b',
+              background: abaAtiva === a.id ? (a.id === 'professores' && countsPorStatus.vencido > 0 ? '#ef444415' : a.id === 'professores' && countsPorStatus.pendente > 0 ? '#fbbf2415' : a.id === 'stripe' ? '#00b94a15' : '#00d4ff15') : 'transparent',
+              color: abaAtiva === a.id ? (a.id === 'professores' && countsPorStatus.vencido > 0 ? '#ef4444' : a.id === 'professores' && countsPorStatus.pendente > 0 ? '#fbbf24' : a.id === 'stripe' ? '#00b94a' : '#00d4ff') : '#64748b',
             }}>
             {a.label}
           </button>
@@ -703,8 +703,8 @@ export default function FinanceiroAdminView() {
         </div>
       )}
 
-      {/* ABA PAGBANK */}
-      {abaAtiva === 'pagbank' && (
+      {/* ABA STRIPE */}
+      {abaAtiva === 'stripe' && (
         <div className="space-y-4">
           {(() => {
             let cfg = {};
@@ -752,7 +752,7 @@ export default function FinanceiroAdminView() {
                   ))}
                 </div>
 
-                <button onClick={() => setShowPagBank(true)}
+                <button onClick={() => setShowStripe(true)}
                   className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all"
                   style={{ background: conectado ? 'linear-gradient(135deg, #1e2a3a, #253545)' : 'linear-gradient(135deg, #635bff, #00AAFF)', color: conectado ? '#94a3b8' : '#fff' }}>
                   {conectado ? '⚙️ Editar Configuração' : '🔗 Configurar Integração'}
@@ -764,7 +764,7 @@ export default function FinanceiroAdminView() {
       )}
 
       {/* Modal Stripe */}
-      {showPagBank && <ModalIntegracaoStripe onClose={() => setShowPagBank(false)} />}
+      {showStripe && <ModalIntegracaoStripe onClose={() => setShowStripe(false)} />}
 
       {/* Checkout Stripe para mensalidade de professor */}
       {checkoutTransacao && (

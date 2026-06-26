@@ -31,12 +31,10 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
     catch { return 12; }
   })();
 
-  // PIX payload fixo — integração real futura via Stripe
-  const pixCode = `00020126580014BR.GOV.BCB.PIX0136fitpro@pagamento.com.br5204000053039865802BR5913FitPro Saude6009SAO PAULO62070503***6304ABCD`;
+  const pixCode = `00020126580014BR.GOV.BCB.PIX0136personalfitup@pagamento.com.br5204000053039865802BR5913Personal Fit Up6009SAO PAULO62070503***6304ABCD`;
 
   const handlePagar = async () => {
     if (metodo === 'pix') {
-      // PIX: confirma manualmente (aguarda pagamento externo)
       setLoading(true);
       setTimeout(() => {
         setLoading(false);
@@ -73,7 +71,7 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
         comprador,
       };
 
-      const res = await base44.functions.invoke('pagbankCheckout', payload);
+      const res = await base44.functions.invoke('stripeCheckout', payload);
       const data = res?.data;
 
       if (data?.ok) {
@@ -82,7 +80,7 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
       } else {
         setErro(data?.error || 'Erro ao processar pagamento. Tente novamente.');
       }
-    } catch (e) {
+    } catch {
       setErro('Erro de conexão. Tente novamente.');
     } finally {
       setLoading(false);
@@ -96,7 +94,6 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
       <div className="w-full max-w-md rounded-2xl overflow-hidden flex flex-col"
         style={{ background: '#0d1525', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '95vh' }}>
 
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 flex-shrink-0"
           style={{ background: '#080d1a', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div className="flex items-center gap-3">
@@ -112,7 +109,6 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
           {!loading && <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/5"><X size={16} color="#6b7280" /></button>}
         </div>
 
-        {/* Resultado final */}
         {resultado ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
             {resultado.novoStatus === 'pago' ? (
@@ -162,7 +158,6 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
           </div>
         ) : (
           <div className="overflow-y-auto flex-1 p-5 space-y-4">
-            {/* Resumo */}
             <div className="p-3 rounded-xl flex items-center justify-between"
               style={{ background: '#635bff10', border: '1px solid #635bff25' }}>
               <div>
@@ -172,7 +167,6 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
               <p className="text-lg font-black" style={{ color: '#a5b4fc' }}>R$ {valor.toFixed(2)}</p>
             </div>
 
-            {/* Seleção de método */}
             <div>
               <p className="text-xs text-slate-400 font-semibold mb-2 uppercase tracking-wide">Método de Pagamento</p>
               <div className="grid grid-cols-3 gap-2">
@@ -191,17 +185,15 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
               </div>
             </div>
 
-            {/* PIX */}
             {metodo === 'pix' && (
               <div className="p-4 rounded-xl text-center space-y-3"
                 style={{ background: '#00E87A08', border: '1px solid #00E87A20' }}>
                 <QrCode size={40} className="mx-auto" color="#00E87A" />
                 <p className="text-sm text-white font-semibold">Clique em Pagar para gerar o código PIX</p>
-                <p className="text-xs text-slate-400">Após o pagamento, aguarde confirmação do professor.</p>
+                <p className="text-xs text-slate-400">Após o pagamento, aguarde confirmação.</p>
               </div>
             )}
 
-            {/* Dados do comprador (cartão/débito) */}
             {metodo !== 'pix' && (
               <>
                 <div>

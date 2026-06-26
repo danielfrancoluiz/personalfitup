@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Lock, CheckCircle2 } from 'lucide-react';
 import { generateId } from '../../lib/fitpro-storage';
-import ModalCheckoutStripe from './ModalCheckoutPagBank';
+import ModalCheckoutStripe from './ModalCheckoutStripe';
 
 const EMOJIS = { Médico: '👨‍⚕️', Nutricionista: '🥗', Fisioterapeuta: '🏥', Psicólogo: '🧠', Cardiologista: '❤️', Ortopedista: '🦴', 'Professor de Educação Física': '💪', 'Personal Trainer': '🏋️' };
 const BORDER = 'rgba(255,255,255,0.07)';

@@ -14,9 +14,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'transacaoId e cartao são obrigatórios' });
     }
 
-    const configs = await filterEntities('ConfiguracaoPagBank', {});
+    const configs = await filterEntities('ConfiguracaoStripe', {});
     const cfg = configs[0];
-    if (!cfg?.token) {
+    const stripeSecret = process.env.STRIPE_SECRET_KEY || cfg?.secretKey || cfg?.token;
+    if (!stripeSecret) {
       return res.status(400).json({
         error: 'Stripe não configurado. Acesse Financeiro > Stripe e salve suas credenciais.',
       });
@@ -42,7 +43,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Valor inválido para cobrança.' });
     }
 
-    const stripeSecret = process.env.STRIPE_SECRET_KEY || cfg.token;
     const stripe = new Stripe(stripeSecret, { apiVersion: '2023-10-16' });
     const valorCentavos = Math.round(valorTransacao * 100);
     const parcelas = parseInt(cartao.parcelas, 10) || 1;
@@ -111,7 +111,7 @@ export default async function handler(req, res) {
           : 'Pagamento em análise.',
     });
   } catch (error) {
-    console.error('pagbank-checkout error:', error);
+    console.error('stripe-checkout error:', error);
     const msg = error.type === 'StripeCardError' || error.type === 'StripeInvalidRequestError'
       ? error.message
       : 'Erro ao processar pagamento. Verifique os dados e tente novamente.';

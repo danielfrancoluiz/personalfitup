@@ -3,7 +3,7 @@ import { X, CheckCircle2, AlertCircle, Copy, Eye, EyeOff, ExternalLink, Shield, 
 import { base44 } from '@/api/base44Client';
 
 const STRIPE_KEY = 'fitpro_stripe_config';
-const WEBHOOK_URL = `${import.meta.env.VITE_APP_URL || 'https://personalfitup.com.br'}/api/pagbank-webhook`;
+const WEBHOOK_URL = `${import.meta.env.VITE_APP_URL || 'https://personalfitup.com.br'}/api/stripe-webhook`;
 
 function loadConfig() {
   try { return JSON.parse(localStorage.getItem(STRIPE_KEY)) || {}; } catch { return {}; }
@@ -46,20 +46,22 @@ export default function ModalIntegracaoStripe({ onClose }) {
     saveConfig(form);
     setConfig(form);
 
-    // Persiste no entity ConfiguracaoPagBank (reaproveitando entidade existente com campos genéricos)
-    const existentes = await base44.entities.ConfiguracaoPagBank.list();
+    const existentes = await base44.entities.ConfiguracaoStripe.list();
     const payload = {
-      email: form.publishableKey, // reaproveitando campo email para publishableKey
-      token: form.secretKey,       // reaproveitando campo token para secretKey
+      publishableKey: form.publishableKey,
+      secretKey: form.secretKey,
+      webhookSecret: form.webhookSecret,
+      email: form.publishableKey,
+      token: form.secretKey,
+      webhookUrl: form.webhookSecret,
       ambiente: form.ambiente,
       metodos: form.metodos,
       parcelasMax: form.parcelasMax,
-      webhookUrl: form.webhookSecret,
     };
     if (existentes.length > 0) {
-      await base44.entities.ConfiguracaoPagBank.update(existentes[0].id, payload);
+      await base44.entities.ConfiguracaoStripe.update(existentes[0].id, payload);
     } else {
-      await base44.entities.ConfiguracaoPagBank.create(payload);
+      await base44.entities.ConfiguracaoStripe.create(payload);
     }
 
     setSaved(true);
@@ -69,8 +71,8 @@ export default function ModalIntegracaoStripe({ onClose }) {
   const desconectar = async () => {
     if (!confirm('Desconectar a integração com Stripe?')) return;
     localStorage.removeItem(STRIPE_KEY);
-    const existentes = await base44.entities.ConfiguracaoPagBank.list();
-    for (const e of existentes) await base44.entities.ConfiguracaoPagBank.delete(e.id);
+    const existentes = await base44.entities.ConfiguracaoStripe.list();
+    for (const e of existentes) await base44.entities.ConfiguracaoStripe.delete(e.id);
     setConfig({});
     setForm({ publishableKey: '', secretKey: '', webhookSecret: '', ambiente: 'producao', moeda: 'brl', parcelasMax: '12', metodos: ['card', 'pix', 'boleto'] });
   };
