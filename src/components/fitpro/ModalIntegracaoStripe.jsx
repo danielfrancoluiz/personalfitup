@@ -149,23 +149,24 @@ export default function ModalIntegracaoStripe({ onClose }) {
               <div className="p-4 rounded-xl space-y-3"
                 style={{ background: '#0a1628', border: '1px solid rgba(99,91,255,0.25)' }}>
                 <p className="text-xs font-bold text-indigo-400 flex items-center gap-1.5"><Info size={13} />Como obter suas chaves Stripe:</p>
+                <p className="text-[11px] text-slate-500">Use <strong className="text-slate-400">Developers → API keys</strong> (não é necessário Stripe Connect).</p>
                 <ol className="space-y-2 text-xs text-slate-400 list-none">
                   <li className="flex gap-2">
                     <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">1</span>
-                    Acesse <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer"
-                      className="underline text-indigo-400 hover:text-indigo-300">dashboard.stripe.com/apikeys</a>
+                    Acesse <a href="https://dashboard.stripe.com/test/apikeys" target="_blank" rel="noreferrer"
+                      className="underline text-indigo-400 hover:text-indigo-300">dashboard.stripe.com/test/apikeys</a> (modo teste)
                   </li>
                   <li className="flex gap-2">
                     <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">2</span>
-                    Copie a <strong className="text-slate-300">Chave Publicável</strong> (começa com <code className="text-indigo-300">pk_live_</code>)
+                    Copie a <strong className="text-slate-300">Chave publicável</strong> (<code className="text-indigo-300">pk_test_</code> ou <code className="text-indigo-300">pk_live_</code>)
                   </li>
                   <li className="flex gap-2">
                     <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">3</span>
-                    Clique em <strong className="text-slate-300">Revelar chave secreta</strong> e copie (começa com <code className="text-indigo-300">sk_live_</code>)
+                    Revelar e copiar a <strong className="text-slate-300">Chave secreta</strong> (<code className="text-indigo-300">sk_test_</code> ou <code className="text-indigo-300">sk_live_</code>)
                   </li>
                   <li className="flex gap-2">
                     <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">4</span>
-                    Cole as chaves abaixo e salve
+                    Cole abaixo, salve e adicione <code className="text-indigo-300">sk_test_...</code> como <code className="text-indigo-300">STRIPE_SECRET_KEY</code> na Vercel
                   </li>
                 </ol>
                 <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer"

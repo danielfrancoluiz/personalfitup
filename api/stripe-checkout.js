@@ -8,10 +8,10 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    const { transacaoId, cartao, comprador, metodo } = body;
+    const { transacaoId, comprador, metodo, parcelas, valor: valorBody } = body;
 
-    if (!transacaoId || !cartao) {
-      return res.status(400).json({ error: 'transacaoId e cartao são obrigatórios' });
+    if (!transacaoId) {
+      return res.status(400).json({ error: 'transacaoId é obrigatório' });
     }
 
     const configs = await filterEntities('ConfiguracaoStripe', {});
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     const stripeSecret = process.env.STRIPE_SECRET_KEY || cfg?.secretKey || cfg?.token;
     if (!stripeSecret) {
       return res.status(400).json({
-        error: 'Stripe não configurado. Acesse Financeiro > Stripe e salve suas credenciais.',
+        error: 'Stripe não configurado. Acesse Financeiro > Stripe e salve suas credenciais (ou defina STRIPE_SECRET_KEY na Vercel).',
       });
     }
 
@@ -35,8 +35,8 @@ export default async function handler(req, res) {
       valorTransacao = parseFloat(transacaoNoBanco.valor);
       descricaoTransacao = transacaoNoBanco.descricao || descricaoTransacao;
     } else {
-      valorTransacao = parseFloat(cartao.valor || 0);
-      descricaoTransacao = cartao.descricao || 'Consulta parceiro Personal Fit Up';
+      valorTransacao = parseFloat(valorBody || 0);
+      descricaoTransacao = body.descricao || 'Consulta parceiro Personal Fit Up';
     }
 
     if (!valorTransacao || valorTransacao <= 0) {
@@ -45,55 +45,35 @@ export default async function handler(req, res) {
 
     const stripe = new Stripe(stripeSecret, { apiVersion: '2023-10-16' });
     const valorCentavos = Math.round(valorTransacao * 100);
-    const parcelas = parseInt(cartao.parcelas, 10) || 1;
+    const numParcelas = parseInt(parcelas, 10) || 1;
 
-    const paymentMethod = await stripe.paymentMethods.create({
-      type: 'card',
-      card: {
-        number: cartao.numero.replace(/\s/g, ''),
-        exp_month: parseInt(cartao.mesValidade, 10),
-        exp_year: parseInt(cartao.anoValidade, 10),
-        cvc: cartao.cvv,
-      },
-      billing_details: {
-        name: cartao.nomeTitular,
-        email: comprador?.email || '',
-      },
-    });
-
-    const paymentMethodOptions = {};
-    if (metodo !== 'debito' && parcelas > 1) {
-      paymentMethodOptions.card = {
-        installments: { enabled: true },
-        request_three_d_secure: 'automatic',
-      };
-    }
-
-    const returnUrl = process.env.VITE_APP_URL || 'https://personalfitup.com.br';
-
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntentParams = {
       amount: valorCentavos,
       currency: 'brl',
-      payment_method: paymentMethod.id,
-      confirm: true,
+      payment_method_types: ['card'],
       description: descricaoTransacao,
       metadata: {
-        transacaoId,
+        transacaoId: String(transacaoId),
         alunoNome: comprador?.nome || '',
         cpf: comprador?.cpf || '',
         metodo: metodo || 'credito',
+        parcelas: String(numParcelas),
       },
-      ...(Object.keys(paymentMethodOptions).length > 0 ? { payment_method_options: paymentMethodOptions } : {}),
-      return_url: returnUrl,
-    });
+    };
 
-    let novoStatus = 'pendente';
-    if (paymentIntent.status === 'succeeded') novoStatus = 'pago';
-    else if (['canceled', 'requires_payment_method'].includes(paymentIntent.status)) novoStatus = 'cancelado';
+    if (metodo !== 'debito' && numParcelas > 1) {
+      paymentIntentParams.payment_method_options = {
+        card: {
+          installments: { enabled: true },
+        },
+      };
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
 
     if (transacaoNoBanco) {
       await updateEntity('Transacao', transacaoId, {
-        status: novoStatus,
+        status: 'pendente',
         stripePaymentIntentId: paymentIntent.id,
         dataAtualizacaoStripe: new Date().toISOString(),
       });
@@ -101,20 +81,14 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
-      status: paymentIntent.status,
-      novoStatus,
-      chargeId: paymentIntent.id,
-      mensagem: novoStatus === 'pago'
-        ? 'Pagamento aprovado com sucesso!'
-        : novoStatus === 'cancelado'
-          ? 'Pagamento recusado. Verifique os dados do cartão.'
-          : 'Pagamento em análise.',
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
     });
   } catch (error) {
     console.error('stripe-checkout error:', error);
-    const msg = error.type === 'StripeCardError' || error.type === 'StripeInvalidRequestError'
+    const msg = error.type === 'StripeInvalidRequestError'
       ? error.message
-      : 'Erro ao processar pagamento. Verifique os dados e tente novamente.';
+      : 'Erro ao iniciar pagamento. Verifique a configuração do Stripe.';
     return res.status(400).json({ error: msg });
   }
 }
