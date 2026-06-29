@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, ArrowLeft, User, Mail, Lock, Eye, EyeOff, Phone, UserCheck, Users, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, User, Mail, Lock, Eye, EyeOff, Phone, UserCheck, Users, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { addCredential, emailExists } from '../../lib/fitpro-storage';
 import ModalPlanosBoasVindas from '../../components/fitpro/ModalPlanosBoasVindas';
@@ -124,8 +124,8 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
   if (tipo === 'escolha') return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#0a0e1a' }}>
       <div className="w-full max-w-md">
-        <div className="flex items-center gap-2 mb-8 justify-center">
-          <Zap size={20} color="#00d4ff" /><span className="font-bold text-white text-lg">FitPro</span>
+        <div className="flex flex-col items-center gap-2 mb-8">
+          <img src="/logo.jpeg" alt="Personal Fit Up" className="w-48 object-contain" />
           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#00d4ff15', color: '#00d4ff' }}>Cadastro</span>
         </div>
         <h2 className="text-2xl font-bold text-white mb-2 text-center">Criar conta</h2>

@@ -40,7 +40,7 @@ export default function LoginPage({ onCadastro }) {
           <div className="absolute bottom-32 right-10 w-48 h-48 rounded-full opacity-5" style={{ background: 'radial-gradient(circle, #a78bfa, transparent)' }} />
         </div>
         <div className="flex justify-center">
-          <img src="/logo.svg" alt="Personal Fit Up" className="w-72 object-contain" />
+          <img src="/logo.jpeg" alt="Personal Fit Up" className="w-72 object-contain" />
         </div>
         <div>
 
@@ -66,7 +66,7 @@ export default function LoginPage({ onCadastro }) {
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex justify-center mb-8">
-            <img src="/logo.svg" alt="Personal Fit Up" className="w-56 object-contain" />
+            <img src="/logo.jpeg" alt="Personal Fit Up" className="w-56 object-contain" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-1">Bem-vindo de volta</h2>
           <p className="text-slate-400 text-sm mb-6">Faça login para acessar sua área</p>
