@@ -26,6 +26,10 @@ body {
 
 select option { background: #1e2a3a; color: #f8fafc; }
 
+.brand-logo-blend {
+  mix-blend-mode: screen;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

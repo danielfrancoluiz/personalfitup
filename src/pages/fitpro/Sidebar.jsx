@@ -7,6 +7,7 @@ import {
   TrendingUp, Heart, ChevronRight, Footprints, CalendarDays, FolderOpen
 } from 'lucide-react';
 import { useAuth } from '../../context/FitProContext';
+import BrandLogo from '../../components/fitpro/BrandLogo';
 
 export const adminNav = [
   { icon: LayoutDashboard, label: 'Dashboard', color: '#00AAFF', view: 'dashboard' },
@@ -59,7 +60,7 @@ function SidebarContent({ navItems, activeView, onNav, isMobile, onClose }) {
     <div className="flex flex-col h-full" style={{ background: '#080d1a', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
       <div className="p-5 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <img src="/logo.jpeg" alt="Personal Fit Up" className="h-9 w-auto max-w-[130px] object-contain flex-shrink-0" />
+          <BrandLogo size="sidebar" showGlow={false} />
           <span className="text-xs px-1.5 py-0.5 rounded-md flex-shrink-0" style={{ background: `${roleColor}15`, color: roleColor, border: `1px solid ${roleColor}25` }}>{roleLabel}</span>
         </div>
         {isMobile && <button onClick={onClose}><X size={18} color="#6b7280" /></button>}

@@ -4,6 +4,7 @@ import { ArrowLeft, User, Mail, Lock, Eye, EyeOff, Phone, UserCheck, Users, Chec
 import { useApp, useAuth } from '../../context/FitProContext';
 import { addCredential, emailExists } from '../../lib/fitpro-storage';
 import ModalPlanosBoasVindas from '../../components/fitpro/ModalPlanosBoasVindas';
+import BrandLogo from '../../components/fitpro/BrandLogo';
 
 const estados = [
   { uf: 'AC', nome: 'Acre' },
@@ -124,9 +125,9 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
   if (tipo === 'escolha') return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#0a0e1a' }}>
       <div className="w-full max-w-md">
-        <div className="flex flex-col items-center gap-2 mb-8">
-          <img src="/logo.jpeg" alt="Personal Fit Up" className="w-48 object-contain" />
-          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#00d4ff15', color: '#00d4ff' }}>Cadastro</span>
+        <div className="flex flex-col items-center gap-3 mb-8">
+          <BrandLogo size="medium" />
+          <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: '#00AAFF15', color: '#00AAFF', border: '1px solid #00AAFF30' }}>Cadastro</span>
         </div>
         <h2 className="text-2xl font-bold text-white mb-2 text-center">Criar conta</h2>
         <p className="text-slate-400 text-sm mb-8 text-center">Selecione o tipo de conta</p>
