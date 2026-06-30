@@ -45,7 +45,7 @@ export default function ModalPagamentoParceiro({ especialista, usuario, tipoUsua
 
   if (pago) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
+      <div className="fixed inset-0 z-[150] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
         <div className="w-full max-w-sm rounded-2xl p-8 text-center" style={{ background: '#0d1525', border: `1px solid ${BORDER}` }}>
           <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: '#00E87A20', border: '2px solid #00E87A' }}>
             <CheckCircle2 size={32} color="#00E87A" />
@@ -69,7 +69,8 @@ export default function ModalPagamentoParceiro({ especialista, usuario, tipoUsua
 
   return (
     <>
-      <div className="fixed inset-0 z-40 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}
+      {!showStripe && (
+      <div className="fixed inset-0 z-[150] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
         <div className="w-full max-w-sm rounded-2xl overflow-hidden" style={{ background: '#0d1525', border: `1px solid ${BORDER}` }}>
 
@@ -111,7 +112,7 @@ export default function ModalPagamentoParceiro({ especialista, usuario, tipoUsua
             <button onClick={() => setShowStripe(true)}
               className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg, #635bff, #00AAFF)' }}>
-              💳 Pagar com Cartão — R$ {valor.toFixed(2)}
+              Pagar — R$ {valor.toFixed(2)}
             </button>
 
             <p className="text-xs text-center text-slate-600 flex items-center justify-center gap-1">
@@ -120,8 +121,8 @@ export default function ModalPagamentoParceiro({ especialista, usuario, tipoUsua
           </div>
         </div>
       </div>
+      )}
 
-      {/* Modal Stripe */}
       {showStripe && (
         <ModalCheckoutStripe
           transacao={transacaoVirtual}

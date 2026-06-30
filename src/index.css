@@ -30,6 +30,12 @@ select option { background: #1e2a3a; color: #f8fafc; }
   mix-blend-mode: screen;
 }
 
+/* Stripe Elements — mobile */
+.StripeElement,
+.__PrivateStripeElement {
+  width: 100%;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
