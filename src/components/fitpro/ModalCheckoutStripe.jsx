@@ -32,13 +32,20 @@ const ELEMENT_STYLE = {
   invalid: { color: '#ef4444', iconColor: '#ef4444' },
 };
 
-function StripeField({ label, children }) {
+/* Campo Stripe com label e contêiner visível */
+function SField({ label, children }) {
   return (
     <div>
-      <p className="text-[11px] text-slate-500 mb-1.5 font-medium">{label}</p>
+      <p className="text-[11px] text-slate-500 mb-1 font-medium">{label}</p>
       <div
-        className="px-3 py-3 rounded-xl min-h-[52px] flex items-center w-full"
-        style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
+        className="px-3 rounded-xl w-full"
+        style={{
+          background: '#1e2a3a',
+          border: '1px solid rgba(255,255,255,0.08)',
+          minHeight: 52,
+          display: 'flex',
+          alignItems: 'center',
+        }}
       >
         {children}
       </div>
@@ -46,12 +53,11 @@ function StripeField({ label, children }) {
   );
 }
 
-function CheckoutBody({
-  transacao, aluno, metodo, setMetodo, valor, maxParcelas, onClose, onSucesso,
-  publishableKey, loadingKey,
-}) {
+/* Formulário de pagamento — precisa estar dentro de <Elements> */
+function Formulario({ transacao, aluno, metodo, valor, maxParcelas, onClose, onSucesso }) {
   const stripe = useStripe();
   const elements = useElements();
+
   const [comprador, setComprador] = useState({
     nome: aluno?.nome || '',
     email: aluno?.email || '',
@@ -60,44 +66,38 @@ function CheckoutBody({
   const [parcelas, setParcelas] = useState('1');
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
-  const [resultado, setResultado] = useState(null);
+  const [ok, setOk] = useState(null);
   const [pixCopiado, setPixCopiado] = useState(false);
 
-  const pixCode = `00020126580014BR.GOV.BCB.PIX0136personalfitup@pagamento.com.br5204000053039865802BR5913Personal Fit Up6009SAO PAULO62070503***6304ABCD`;
-  const stripeNaoConfigurado = !loadingKey && metodo !== 'pix' && !publishableKey;
+  const pixCode = '00020126580014BR.GOV.BCB.PIX0136personalfitup@pagamento.com.br5204000053039865802BR5913Personal Fit Up6009SAO PAULO62070503***6304ABCD';
 
-  const handlePagar = async () => {
+  const pagar = async () => {
     if (metodo === 'pix') {
-      setErro('');
       setLoading(true);
       setTimeout(() => {
         setLoading(false);
-        setResultado({
-          ok: true,
-          novoStatus: 'pendente',
-          mensagem: 'PIX gerado! Aguardando confirmação do pagamento.',
-        });
+        setOk({ tipo: 'pix', msg: 'PIX gerado! Aguardando confirmação do pagamento.' });
       }, 600);
       return;
     }
 
     if (!stripe || !elements) {
-      setErro('Stripe ainda está carregando. Aguarde um instante e tente novamente.');
+      setErro('Stripe ainda está inicializando. Aguarde alguns segundos e tente de novo.');
       return;
     }
 
-    const cardNumber = elements.getElement(CardNumberElement);
-    if (!cardNumber) {
-      setErro('Formulário de cartão indisponível. Recarregue a página.');
+    const cardEl = elements.getElement(CardNumberElement);
+    if (!cardEl) {
+      setErro('Formulário de cartão não encontrado. Recarregue a página.');
       return;
     }
 
-    if (!comprador.nome?.trim() || !comprador.email?.includes('@')) {
-      setErro('Preencha nome e e-mail do comprador.');
+    if (!comprador.nome.trim() || !comprador.email.includes('@')) {
+      setErro('Preencha nome e e-mail.');
       return;
     }
-    if (!comprador.cpf || comprador.cpf.replace(/\D/g, '').length < 11) {
-      setErro('Informe o CPF do titular.');
+    if (comprador.cpf.replace(/\D/g, '').length < 11) {
+      setErro('Informe o CPF (11 dígitos).');
       return;
     }
 
@@ -113,247 +113,184 @@ function CheckoutBody({
         parcelas: metodo === 'debito' ? '1' : parcelas,
         comprador,
       });
-      const data = res?.data;
 
+      const data = res?.data;
       if (!data?.clientSecret) {
-        setErro(data?.error || 'Não foi possível iniciar o pagamento.');
+        setErro(data?.error || 'Erro ao iniciar pagamento.');
         return;
       }
 
-      const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+      const { error: stripeErr, paymentIntent } = await stripe.confirmCardPayment(
         data.clientSecret,
         {
           payment_method: {
-            card: cardNumber,
+            card: cardEl,
             billing_details: { name: comprador.nome, email: comprador.email },
           },
         },
       );
 
-      if (confirmError) {
-        setErro(confirmError.message || 'Pagamento recusado. Verifique os dados do cartão.');
+      if (stripeErr) {
+        setErro(stripeErr.message || 'Cartão recusado.');
         return;
       }
 
-      const novoStatus = paymentIntent?.status === 'succeeded' ? 'pago' : 'pendente';
-      setResultado({
-        ok: true,
-        novoStatus,
-        chargeId: paymentIntent?.id,
-        mensagem: novoStatus === 'pago'
-          ? 'Pagamento aprovado com sucesso!'
-          : 'Pagamento em processamento. Aguarde a confirmação.',
-      });
-      if (novoStatus === 'pago') onSucesso?.();
+      if (paymentIntent?.status === 'succeeded') {
+        setOk({ tipo: 'pago', msg: 'Pagamento aprovado com sucesso!', id: paymentIntent.id });
+        onSucesso?.();
+      } else {
+        setOk({ tipo: 'analise', msg: 'Pagamento em análise. Aguarde a confirmação.' });
+      }
     } catch {
-      setErro('Erro de conexão. Tente novamente.');
+      setErro('Erro de conexão. Verifique sua internet e tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
+  /* Resultado */
+  if (ok) {
+    return (
+      <div className="px-5 py-8 text-center">
+        {ok.tipo === 'pago' && <>
+          <CheckCircle2 size={52} color="#00E87A" className="mx-auto mb-3" />
+          <h3 className="text-lg font-bold text-white mb-1">Pagamento Aprovado!</h3>
+          <p className="text-slate-400 text-sm mb-2">{ok.msg}</p>
+          <p className="text-2xl font-black" style={{ color: '#00E87A' }}>R$ {valor.toFixed(2)}</p>
+        </>}
+        {ok.tipo === 'pix' && <>
+          <Smartphone size={52} color="#00E87A" className="mx-auto mb-3" />
+          <h3 className="text-lg font-bold text-white mb-2">PIX Gerado!</h3>
+          <p className="text-slate-400 text-sm mb-3">{ok.msg}</p>
+          <div className="w-full p-3 rounded-xl text-[11px] font-mono break-all text-slate-400 mb-3 text-left"
+            style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            {pixCode}
+          </div>
+          <button
+            type="button"
+            onClick={() => { navigator.clipboard.writeText(pixCode); setPixCopiado(true); setTimeout(() => setPixCopiado(false), 2000); }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
+            style={{ background: pixCopiado ? '#00E87A20' : '#1e2a3a', color: pixCopiado ? '#00E87A' : '#94a3b8' }}
+          >
+            <Copy size={14} /> {pixCopiado ? 'Copiado!' : 'Copiar código PIX'}
+          </button>
+        </>}
+        {ok.tipo === 'analise' && <>
+          <Loader2 size={40} color="#fbbf24" className="animate-spin mx-auto mb-3" />
+          <h3 className="text-lg font-bold text-white mb-2">Pagamento em análise</h3>
+          <p className="text-slate-400 text-sm">{ok.msg}</p>
+        </>}
+        <button type="button" onClick={onClose}
+          className="mt-6 px-6 py-2.5 rounded-xl font-semibold text-sm text-white"
+          style={{ background: 'linear-gradient(135deg, #00E87A, #059669)' }}>
+          Fechar
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <div className="px-5 pt-3 pb-2 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-        <p className="text-xs text-slate-400 font-semibold mb-2 uppercase tracking-wide">Método</p>
-        <div className="grid grid-cols-3 gap-2">
-          {METODOS.map((m) => {
-            const Icon = m.icon;
-            const ativo = metodo === m.id;
-            return (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => { setMetodo(m.id); setErro(''); }}
-                className="flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all"
-                style={{
-                  background: ativo ? `${m.color}15` : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${ativo ? `${m.color}40` : 'rgba(255,255,255,0.07)'}`,
-                }}
-              >
-                <Icon size={16} style={{ color: ativo ? m.color : '#64748b' }} />
-                <span className="text-[11px] font-semibold" style={{ color: ativo ? m.color : '#64748b' }}>{m.label}</span>
-              </button>
-            );
-          })}
+    <>
+      {/* Resumo */}
+      <div className="mx-5 mt-4 mb-3 p-3 rounded-xl flex items-center justify-between gap-2"
+        style={{ background: '#635bff10', border: '1px solid #635bff25' }}>
+        <div className="min-w-0">
+          <p className="text-xs text-slate-400 truncate">{transacao?.descricao}</p>
+          <p className="text-xs text-slate-500 truncate">{aluno?.nome}</p>
         </div>
+        <p className="text-base font-black flex-shrink-0" style={{ color: '#a5b4fc' }}>R$ {valor.toFixed(2)}</p>
       </div>
 
-      <div
-        className="overflow-y-auto overscroll-contain px-5 py-4"
-        style={{ maxHeight: 'min(58vh, 460px)', WebkitOverflowScrolling: 'touch' }}
-      >
-        {loadingKey ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-3">
-            <Loader2 size={28} className="animate-spin text-slate-500" />
-            <p className="text-xs text-slate-500">Carregando pagamento...</p>
-          </div>
-        ) : stripeNaoConfigurado ? (
-          <div className="py-8 text-center">
-            <AlertCircle size={32} color="#fbbf24" className="mx-auto mb-3" />
-            <p className="text-sm text-white font-semibold mb-2">Stripe não configurado</p>
-            <p className="text-xs text-slate-400">O administrador precisa salvar as chaves em Financeiro → Stripe.</p>
-          </div>
-        ) : resultado ? (
-          <div className="py-4 text-center">
-            {resultado.novoStatus === 'pago' ? (
-              <>
-                <CheckCircle2 size={48} color="#00E87A" className="mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-white mb-2">Pagamento Aprovado!</h3>
-                <p className="text-slate-400 text-sm mb-2">{resultado.mensagem}</p>
-                <p className="text-2xl font-black" style={{ color: '#00E87A' }}>R$ {valor.toFixed(2)}</p>
-              </>
-            ) : metodo === 'pix' ? (
-              <>
-                <Smartphone size={48} color="#00E87A" className="mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-white mb-2">PIX Gerado!</h3>
-                <p className="text-slate-400 text-sm mb-3">{resultado.mensagem}</p>
-                <div className="w-full p-3 rounded-xl text-[11px] font-mono break-all text-slate-400 mb-3 text-left"
-                  style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  {pixCode}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { navigator.clipboard.writeText(pixCode); setPixCopiado(true); setTimeout(() => setPixCopiado(false), 2000); }}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
-                  style={{ background: pixCopiado ? '#00E87A20' : '#1e2a3a', color: pixCopiado ? '#00E87A' : '#94a3b8' }}
-                >
-                  <Copy size={14} />
-                  {pixCopiado ? 'Copiado!' : 'Copiar código PIX'}
-                </button>
-              </>
-            ) : (
-              <>
-                <Loader2 size={40} color="#fbbf24" className="animate-spin mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-white mb-2">Pagamento em análise</h3>
-                <p className="text-slate-400 text-sm">{resultado.mensagem}</p>
-              </>
-            )}
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-5 px-6 py-2.5 rounded-xl font-semibold text-sm text-white"
-              style={{ background: 'linear-gradient(135deg, #00E87A, #059669)' }}
-            >
-              Fechar
-            </button>
+      {/* Conteúdo com scroll */}
+      <div className="px-5 pb-3 space-y-3 overflow-y-auto" style={{ maxHeight: 'min(52vh, 400px)' }}>
+        {metodo === 'pix' ? (
+          <div className="p-4 rounded-xl text-center space-y-2"
+            style={{ background: '#00E87A08', border: '1px solid #00E87A20' }}>
+            <QrCode size={36} className="mx-auto" color="#00E87A" />
+            <p className="text-sm text-white font-semibold">Toque em &quot;Gerar PIX&quot; abaixo</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="p-3 rounded-xl flex items-center justify-between gap-2"
-              style={{ background: '#635bff10', border: '1px solid #635bff25' }}>
-              <div className="min-w-0">
-                <p className="text-xs text-slate-400 truncate">{transacao?.descricao}</p>
-                <p className="text-xs text-slate-500 truncate">{aluno?.nome}</p>
-              </div>
-              <p className="text-lg font-black flex-shrink-0" style={{ color: '#a5b4fc' }}>R$ {valor.toFixed(2)}</p>
+          <>
+            <div className="space-y-2">
+              <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Dados do comprador</p>
+              {[
+                { key: 'nome', placeholder: 'Nome completo', type: 'text', inputMode: 'text', autoComplete: 'name' },
+                { key: 'cpf', placeholder: 'CPF (somente números)', type: 'text', inputMode: 'numeric', autoComplete: 'off' },
+                { key: 'email', placeholder: 'E-mail', type: 'email', inputMode: 'email', autoComplete: 'email' },
+              ].map(({ key, ...rest }) => (
+                <input
+                  key={key}
+                  value={comprador[key]}
+                  onChange={(e) => setComprador((c) => ({ ...c, [key]: e.target.value }))}
+                  className="w-full px-3 py-3 rounded-xl text-base text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
+                  {...rest}
+                />
+              ))}
             </div>
 
-            {metodo === 'pix' ? (
-              <div className="p-4 rounded-xl text-center space-y-2"
-                style={{ background: '#00E87A08', border: '1px solid #00E87A20' }}>
-                <QrCode size={36} className="mx-auto" color="#00E87A" />
-                <p className="text-sm text-white font-semibold">Toque em &quot;Gerar PIX&quot; abaixo</p>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Dados do comprador</p>
-                  <input
-                    value={comprador.nome}
-                    onChange={(e) => setComprador((c) => ({ ...c, nome: e.target.value }))}
-                    placeholder="Nome completo"
-                    autoComplete="name"
-                    className="w-full px-3 py-3 rounded-xl text-base text-white outline-none"
-                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
-                  />
-                  <input
-                    value={comprador.cpf}
-                    onChange={(e) => setComprador((c) => ({ ...c, cpf: e.target.value }))}
-                    placeholder="CPF"
-                    inputMode="numeric"
-                    className="w-full px-3 py-3 rounded-xl text-base text-white outline-none"
-                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
-                  />
-                  <input
-                    value={comprador.email}
-                    onChange={(e) => setComprador((c) => ({ ...c, email: e.target.value }))}
-                    placeholder="E-mail"
-                    type="email"
-                    inputMode="email"
-                    autoComplete="email"
-                    className="w-full px-3 py-3 rounded-xl text-base text-white outline-none"
-                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
-                  />
-                </div>
+            <div className="space-y-2">
+              <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Dados do cartão</p>
+              <SField label="Número">
+                <CardNumberElement options={{ style: ELEMENT_STYLE, showIcon: true }} className="w-full" />
+              </SField>
+              <SField label="Validade">
+                <CardExpiryElement options={{ style: ELEMENT_STYLE }} className="w-full" />
+              </SField>
+              <SField label="CVV">
+                <CardCvcElement options={{ style: ELEMENT_STYLE }} className="w-full" />
+              </SField>
+              {metodo === 'credito' && maxParcelas > 1 && (
+                <select
+                  value={parcelas}
+                  onChange={(e) => setParcelas(e.target.value)}
+                  className="w-full px-3 py-3 rounded-xl text-base text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
+                >
+                  {Array.from({ length: maxParcelas }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={String(n)}>
+                      {n === 1 ? `À vista — R$ ${valor.toFixed(2)}` : `${n}x de R$ ${(valor / n).toFixed(2)}`}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </>
+        )}
 
-                <div className="space-y-3">
-                  <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Cartão</p>
-                  <StripeField label="Número">
-                    <CardNumberElement options={{ style: ELEMENT_STYLE, showIcon: true }} className="w-full" />
-                  </StripeField>
-                  <StripeField label="Validade">
-                    <CardExpiryElement options={{ style: ELEMENT_STYLE }} className="w-full" />
-                  </StripeField>
-                  <StripeField label="CVV">
-                    <CardCvcElement options={{ style: ELEMENT_STYLE }} className="w-full" />
-                  </StripeField>
-                  {metodo === 'credito' && maxParcelas > 1 && (
-                    <select
-                      value={parcelas}
-                      onChange={(e) => setParcelas(e.target.value)}
-                      className="w-full px-3 py-3 rounded-xl text-base text-white outline-none"
-                      style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
-                    >
-                      {Array.from({ length: maxParcelas }, (_, i) => i + 1).map((n) => (
-                        <option key={n} value={String(n)}>
-                          {n === 1 ? `À vista — R$ ${valor.toFixed(2)}` : `${n}x de R$ ${(valor / n).toFixed(2)}`}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              </>
-            )}
-
-            {erro && (
-              <div className="flex items-start gap-2 p-3 rounded-xl"
-                style={{ background: '#ef444415', border: '1px solid #ef444430' }}>
-                <AlertCircle size={14} color="#ef4444" className="mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-red-400">{erro}</p>
-              </div>
-            )}
+        {erro && (
+          <div className="flex items-start gap-2 p-3 rounded-xl"
+            style={{ background: '#ef444415', border: '1px solid #ef444430' }}>
+            <AlertCircle size={14} color="#ef4444" className="mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-red-400">{erro}</p>
           </div>
         )}
       </div>
 
-      {!resultado && !loadingKey && !stripeNaoConfigurado && (
-        <div className="px-5 py-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-          <button
-            type="button"
-            onClick={handlePagar}
-            disabled={loading || (metodo !== 'pix' && !stripe)}
-            className="w-full py-3.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-60"
-            style={{
-              background: metodo === 'pix'
-                ? 'linear-gradient(135deg, #00E87A, #059669)'
-                : 'linear-gradient(135deg, #635bff, #00AAFF)',
-            }}
-          >
-            {loading ? (
-              <><Loader2 size={16} className="animate-spin" />Processando...</>
-            ) : metodo === 'pix' ? (
-              <><Smartphone size={16} />Gerar PIX — R$ {valor.toFixed(2)}</>
-            ) : (
-              <><CreditCard size={16} />Pagar R$ {valor.toFixed(2)}</>
-            )}
-          </button>
-          <p className="text-[10px] text-center text-slate-600 mt-2 flex items-center justify-center gap-1">
-            <Lock size={10} /> Pagamento seguro via Stripe
-          </p>
-        </div>
-      )}
-    </div>
+      {/* Botão */}
+      <div className="px-5 pt-2 pb-5 border-t mt-2" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+        <button
+          type="button"
+          onClick={pagar}
+          disabled={loading}
+          className="w-full py-3.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-60"
+          style={{
+            background: metodo === 'pix'
+              ? 'linear-gradient(135deg, #00E87A, #059669)'
+              : 'linear-gradient(135deg, #635bff, #00AAFF)',
+          }}
+        >
+          {loading
+            ? <><Loader2 size={16} className="animate-spin" /> Processando...</>
+            : metodo === 'pix'
+              ? <><Smartphone size={16} /> Gerar PIX — R$ {valor.toFixed(2)}</>
+              : <><CreditCard size={16} /> Pagar R$ {valor.toFixed(2)}</>}
+        </button>
+        <p className="text-[10px] text-center text-slate-600 mt-2 flex items-center justify-center gap-1">
+          <Lock size={10} /> Pagamento seguro via Stripe
+        </p>
+      </div>
+    </>
   );
 }
 
@@ -361,6 +298,7 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
   const [metodo, setMetodo] = useState('credito');
   const [publishableKey, setPublishableKey] = useState('');
   const [loadingKey, setLoadingKey] = useState(true);
+  const [keyErro, setKeyErro] = useState('');
 
   const valor = parseFloat(transacao?.valor || 0);
   const maxParcelas = (() => {
@@ -370,19 +308,10 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
 
   useEffect(() => {
     let cancelled = false;
-    resolvePublishableKey().then((pk) => {
-      if (!cancelled) {
-        setPublishableKey(pk);
-        setLoadingKey(false);
-      }
-    });
+    resolvePublishableKey()
+      .then((pk) => { if (!cancelled) { setPublishableKey(pk || ''); setLoadingKey(false); } })
+      .catch(() => { if (!cancelled) { setLoadingKey(false); setKeyErro('Erro ao carregar configuração do Stripe.'); } });
     return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
   }, []);
 
   const stripePromise = useMemo(
@@ -390,59 +319,108 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
     [publishableKey],
   );
 
-  const bodyProps = {
-    transacao,
-    aluno,
-    metodo,
-    setMetodo,
-    valor,
-    maxParcelas,
-    onClose,
-    onSucesso,
-    publishableKey,
-    loadingKey,
-  };
-
   if (typeof document === 'undefined') return null;
+
+  const conteudo = (
+    loadingKey ? (
+      <div className="flex flex-col items-center justify-center py-12 gap-3">
+        <Loader2 size={28} className="animate-spin text-slate-500" />
+        <p className="text-xs text-slate-500">Carregando configuração...</p>
+      </div>
+    ) : keyErro || !publishableKey && metodo !== 'pix' ? (
+      <div className="py-10 px-5 text-center">
+        <AlertCircle size={32} color="#fbbf24" className="mx-auto mb-3" />
+        <p className="text-sm text-white font-semibold mb-2">Stripe não configurado</p>
+        <p className="text-xs text-slate-400">
+          {keyErro || 'O administrador precisa salvar as chaves em Financeiro → Stripe.'}
+        </p>
+        {metodo === 'pix' && <p className="text-xs text-slate-400 mt-2">Para PIX, selecione PIX acima.</p>}
+      </div>
+    ) : null
+  );
 
   const modal = (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4"
-      style={{ background: 'rgba(0,0,0,0.85)' }}
+      className="fixed inset-0 flex items-center justify-center p-3"
+      style={{ background: 'rgba(0,0,0,0.82)', zIndex: 9999 }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      role="dialog"
-      aria-modal="true"
     >
       <div
-        className="w-full max-w-md rounded-2xl shadow-2xl"
+        className="w-full max-w-md rounded-2xl shadow-2xl overflow-hidden"
         style={{ background: '#0d1525', border: '1px solid rgba(255,255,255,0.12)' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div
-          className="flex items-center justify-between px-5 py-4 rounded-t-2xl"
-          style={{ background: '#080d1a', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
-        >
+        {/* Cabeçalho */}
+        <div className="flex items-center justify-between px-5 py-3"
+          style={{ background: '#080d1a', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
               style={{ background: '#635bff20', border: '1px solid #635bff40' }}>
-              <CreditCard size={16} color="#a5b4fc" />
+              <CreditCard size={15} color="#a5b4fc" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-sm">Pagamento Seguro</h3>
-              <p className="text-xs text-slate-500">Stripe</p>
+              <p className="font-bold text-white text-sm">Pagamento Seguro</p>
+              <p className="text-[10px] text-slate-500">Stripe</p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-white/5" aria-label="Fechar">
+          <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-white/5">
             <X size={18} color="#9ca3af" />
           </button>
         </div>
 
-        {publishableKey ? (
-          <Elements stripe={stripePromise}>
-            <CheckoutBody {...bodyProps} />
-          </Elements>
-        ) : (
-          <CheckoutBody {...bodyProps} />
+        {/* Seletor de método */}
+        <div className="px-5 pt-3 pb-2">
+          <div className="grid grid-cols-3 gap-2">
+            {METODOS.map((m) => {
+              const Icon = m.icon;
+              const ativo = metodo === m.id;
+              return (
+                <button key={m.id} type="button"
+                  onClick={() => setMetodo(m.id)}
+                  className="flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all"
+                  style={{
+                    background: ativo ? `${m.color}15` : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${ativo ? `${m.color}40` : 'rgba(255,255,255,0.07)'}`,
+                  }}
+                >
+                  <Icon size={16} style={{ color: ativo ? m.color : '#64748b' }} />
+                  <span className="text-[11px] font-semibold" style={{ color: ativo ? m.color : '#64748b' }}>{m.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Conteúdo */}
+        {conteudo || (
+          publishableKey || metodo === 'pix' ? (
+            publishableKey ? (
+              <Elements stripe={stripePromise}>
+                <Formulario
+                  transacao={transacao}
+                  aluno={aluno}
+                  metodo={metodo}
+                  valor={valor}
+                  maxParcelas={maxParcelas}
+                  onClose={onClose}
+                  onSucesso={onSucesso}
+                />
+              </Elements>
+            ) : (
+              /* PIX sem stripe key */
+              <Formulario
+                transacao={transacao}
+                aluno={aluno}
+                metodo={metodo}
+                valor={valor}
+                maxParcelas={maxParcelas}
+                onClose={onClose}
+                onSucesso={onSucesso}
+                stripe={null}
+                elements={null}
+              />
+            )
+          ) : null
         )}
       </div>
     </div>
