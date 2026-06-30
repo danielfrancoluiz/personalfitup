@@ -32,40 +32,9 @@ const ELEMENT_STYLE = {
   invalid: { color: '#ef4444', iconColor: '#ef4444' },
 };
 
-function useLockBodyScroll(active) {
-  useEffect(() => {
-    if (!active) return undefined;
-    const scrollY = window.scrollY;
-    const { style } = document.body;
-    const prev = {
-      position: style.position,
-      top: style.top,
-      left: style.left,
-      right: style.right,
-      width: style.width,
-      overflow: style.overflow,
-    };
-    style.position = 'fixed';
-    style.top = `-${scrollY}px`;
-    style.left = '0';
-    style.right = '0';
-    style.width = '100%';
-    style.overflow = 'hidden';
-    return () => {
-      style.position = prev.position;
-      style.top = prev.top;
-      style.left = prev.left;
-      style.right = prev.right;
-      style.width = prev.width;
-      style.overflow = prev.overflow;
-      window.scrollTo(0, scrollY);
-    };
-  }, [active]);
-}
-
 function StripeField({ label, children }) {
   return (
-    <div className="stripe-field-wrap">
+    <div>
       <p className="text-[11px] text-slate-500 mb-1.5 font-medium">{label}</p>
       <div
         className="px-3 py-3 rounded-xl min-h-[52px] flex items-center w-full"
@@ -159,7 +128,6 @@ function CheckoutBody({
             billing_details: { name: comprador.nome, email: comprador.email },
           },
         },
-        { redirect: 'if_required' },
       );
 
       if (confirmError) {
@@ -185,8 +153,8 @@ function CheckoutBody({
   };
 
   return (
-    <>
-      <div className="flex-shrink-0 px-5 pt-3 pb-2 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+    <div>
+      <div className="px-5 pt-3 pb-2 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
         <p className="text-xs text-slate-400 font-semibold mb-2 uppercase tracking-wide">Método</p>
         <div className="grid grid-cols-3 gap-2">
           {METODOS.map((m) => {
@@ -197,7 +165,7 @@ function CheckoutBody({
                 key={m.id}
                 type="button"
                 onClick={() => { setMetodo(m.id); setErro(''); }}
-                className="flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all touch-manipulation"
+                className="flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all"
                 style={{
                   background: ativo ? `${m.color}15` : 'rgba(255,255,255,0.04)',
                   border: `1px solid ${ativo ? `${m.color}40` : 'rgba(255,255,255,0.07)'}`,
@@ -212,8 +180,8 @@ function CheckoutBody({
       </div>
 
       <div
-        className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 min-h-[200px]"
-        style={{ WebkitOverflowScrolling: 'touch' }}
+        className="overflow-y-auto overscroll-contain px-5 py-4"
+        style={{ maxHeight: 'min(58vh, 460px)', WebkitOverflowScrolling: 'touch' }}
       >
         {loadingKey ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3">
@@ -247,7 +215,7 @@ function CheckoutBody({
                 <button
                   type="button"
                   onClick={() => { navigator.clipboard.writeText(pixCode); setPixCopiado(true); setTimeout(() => setPixCopiado(false), 2000); }}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold touch-manipulation"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
                   style={{ background: pixCopiado ? '#00E87A20' : '#1e2a3a', color: pixCopiado ? '#00E87A' : '#94a3b8' }}
                 >
                   <Copy size={14} />
@@ -264,7 +232,7 @@ function CheckoutBody({
             <button
               type="button"
               onClick={onClose}
-              className="mt-5 px-6 py-2.5 rounded-xl font-semibold text-sm text-white touch-manipulation"
+              className="mt-5 px-6 py-2.5 rounded-xl font-semibold text-sm text-white"
               style={{ background: 'linear-gradient(135deg, #00E87A, #059669)' }}
             >
               Fechar
@@ -304,7 +272,6 @@ function CheckoutBody({
                     onChange={(e) => setComprador((c) => ({ ...c, cpf: e.target.value }))}
                     placeholder="CPF"
                     inputMode="numeric"
-                    autoComplete="off"
                     className="w-full px-3 py-3 rounded-xl text-base text-white outline-none"
                     style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
                   />
@@ -320,7 +287,7 @@ function CheckoutBody({
                   />
                 </div>
 
-                <div className="space-y-3" key={`card-${metodo}`}>
+                <div className="space-y-3">
                   <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Cartão</p>
                   <StripeField label="Número">
                     <CardNumberElement options={{ style: ELEMENT_STYLE, showIcon: true }} className="w-full" />
@@ -361,15 +328,12 @@ function CheckoutBody({
       </div>
 
       {!resultado && !loadingKey && !stripeNaoConfigurado && (
-        <div
-          className="flex-shrink-0 px-5 py-4 border-t"
-          style={{ borderColor: 'rgba(255,255,255,0.07)', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
-        >
+        <div className="px-5 py-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
           <button
             type="button"
             onClick={handlePagar}
             disabled={loading || (metodo !== 'pix' && !stripe)}
-            className="w-full py-3.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-60 touch-manipulation"
+            className="w-full py-3.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-60"
             style={{
               background: metodo === 'pix'
                 ? 'linear-gradient(135deg, #00E87A, #059669)'
@@ -389,50 +353,6 @@ function CheckoutBody({
           </p>
         </div>
       )}
-    </>
-  );
-}
-
-function CheckoutModalShell({ children, onClose }) {
-  return (
-    <div
-      className="checkout-modal-backdrop fixed inset-0 z-[9999] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.88)' }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        className="checkout-modal-panel w-full max-w-md flex flex-col shadow-2xl"
-        style={{ background: '#0d1525', border: '1px solid rgba(255,255,255,0.12)' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div
-          className="flex-shrink-0 flex items-center justify-between px-5 py-4"
-          style={{
-            background: '#080d1a',
-            borderBottom: '1px solid rgba(255,255,255,0.07)',
-            paddingTop: 'max(0.75rem, env(safe-area-inset-top))',
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: '#635bff20', border: '1px solid #635bff40' }}>
-              <CreditCard size={16} color="#a5b4fc" />
-            </div>
-            <div>
-              <h3 className="font-bold text-white text-sm">Pagamento Seguro</h3>
-              <p className="text-xs text-slate-500">Stripe</p>
-            </div>
-          </div>
-          <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 touch-manipulation" aria-label="Fechar">
-            <X size={18} color="#9ca3af" />
-          </button>
-        </div>
-        <div className="flex flex-col flex-1 min-h-0 overflow-visible">
-          {children}
-        </div>
-      </div>
     </div>
   );
 }
@@ -448,8 +368,6 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
     catch { return 12; }
   })();
 
-  useLockBodyScroll(true);
-
   useEffect(() => {
     let cancelled = false;
     resolvePublishableKey().then((pk) => {
@@ -459,6 +377,12 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
       }
     });
     return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
   }, []);
 
   const stripePromise = useMemo(
@@ -482,15 +406,46 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
   if (typeof document === 'undefined') return null;
 
   const modal = (
-    <CheckoutModalShell onClose={onClose}>
-      {publishableKey ? (
-        <Elements stripe={stripePromise}>
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4"
+      style={{ background: 'rgba(0,0,0,0.85)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="w-full max-w-md rounded-2xl shadow-2xl"
+        style={{ background: '#0d1525', border: '1px solid rgba(255,255,255,0.12)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className="flex items-center justify-between px-5 py-4 rounded-t-2xl"
+          style={{ background: '#080d1a', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ background: '#635bff20', border: '1px solid #635bff40' }}>
+              <CreditCard size={16} color="#a5b4fc" />
+            </div>
+            <div>
+              <h3 className="font-bold text-white text-sm">Pagamento Seguro</h3>
+              <p className="text-xs text-slate-500">Stripe</p>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-white/5" aria-label="Fechar">
+            <X size={18} color="#9ca3af" />
+          </button>
+        </div>
+
+        {publishableKey ? (
+          <Elements stripe={stripePromise}>
+            <CheckoutBody {...bodyProps} />
+          </Elements>
+        ) : (
           <CheckoutBody {...bodyProps} />
-        </Elements>
-      ) : (
-        <CheckoutBody {...bodyProps} />
-      )}
-    </CheckoutModalShell>
+        )}
+      </div>
+    </div>
   );
 
   return createPortal(modal, document.body);

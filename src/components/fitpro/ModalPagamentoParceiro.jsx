@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { X, Lock, CheckCircle2 } from 'lucide-react';
 import { generateId } from '../../lib/fitpro-storage';
 import ModalCheckoutStripe from './ModalCheckoutStripe';
@@ -36,12 +36,11 @@ export default function ModalPagamentoParceiro({ especialista, usuario, tipoUsua
     return pedidoId;
   };
 
-  // Transação virtual para o modal Stripe (parceiro não tem transação no banco)
-  const transacaoVirtual = {
+  const transacaoVirtual = useMemo(() => ({
     id: `parceiro_${especialista.id}_${Date.now()}`,
     descricao: `Consulta — ${especialista.nome}`,
     valor,
-  };
+  }), [especialista.id, especialista.nome, valor]);
 
   if (pago) {
     return (
