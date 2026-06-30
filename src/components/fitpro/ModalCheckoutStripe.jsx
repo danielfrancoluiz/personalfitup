@@ -24,7 +24,7 @@ const METODOS = [
 const ELEMENT_STYLE = {
   base: {
     color: '#f8fafc',
-    fontFamily: 'system-ui, sans-serif',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
     fontSize: '16px',
     lineHeight: '24px',
     '::placeholder': { color: '#64748b' },
@@ -32,12 +32,43 @@ const ELEMENT_STYLE = {
   invalid: { color: '#ef4444', iconColor: '#ef4444' },
 };
 
+function useLockBodyScroll(active) {
+  useEffect(() => {
+    if (!active) return undefined;
+    const scrollY = window.scrollY;
+    const { style } = document.body;
+    const prev = {
+      position: style.position,
+      top: style.top,
+      left: style.left,
+      right: style.right,
+      width: style.width,
+      overflow: style.overflow,
+    };
+    style.position = 'fixed';
+    style.top = `-${scrollY}px`;
+    style.left = '0';
+    style.right = '0';
+    style.width = '100%';
+    style.overflow = 'hidden';
+    return () => {
+      style.position = prev.position;
+      style.top = prev.top;
+      style.left = prev.left;
+      style.right = prev.right;
+      style.width = prev.width;
+      style.overflow = prev.overflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, [active]);
+}
+
 function StripeField({ label, children }) {
   return (
-    <div>
+    <div className="stripe-field-wrap">
       <p className="text-[11px] text-slate-500 mb-1.5 font-medium">{label}</p>
       <div
-        className="px-3 py-3 rounded-xl min-h-[48px] flex items-center"
+        className="px-3 py-3 rounded-xl min-h-[52px] flex items-center w-full"
         style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
       >
         {children}
@@ -82,7 +113,7 @@ function CheckoutBody({
     }
 
     if (!stripe || !elements) {
-      setErro('Stripe ainda está carregando. Aguarde um instante.');
+      setErro('Stripe ainda está carregando. Aguarde um instante e tente novamente.');
       return;
     }
 
@@ -120,12 +151,16 @@ function CheckoutBody({
         return;
       }
 
-      const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
-        payment_method: {
-          card: cardNumber,
-          billing_details: { name: comprador.nome, email: comprador.email },
+      const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+        data.clientSecret,
+        {
+          payment_method: {
+            card: cardNumber,
+            billing_details: { name: comprador.nome, email: comprador.email },
+          },
         },
-      });
+        { redirect: 'if_required' },
+      );
 
       if (confirmError) {
         setErro(confirmError.message || 'Pagamento recusado. Verifique os dados do cartão.');
@@ -151,7 +186,7 @@ function CheckoutBody({
 
   return (
     <>
-      <div className="px-5 pt-3 pb-2 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+      <div className="flex-shrink-0 px-5 pt-3 pb-2 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
         <p className="text-xs text-slate-400 font-semibold mb-2 uppercase tracking-wide">Método</p>
         <div className="grid grid-cols-3 gap-2">
           {METODOS.map((m) => {
@@ -162,7 +197,7 @@ function CheckoutBody({
                 key={m.id}
                 type="button"
                 onClick={() => { setMetodo(m.id); setErro(''); }}
-                className="flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all"
+                className="flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all touch-manipulation"
                 style={{
                   background: ativo ? `${m.color}15` : 'rgba(255,255,255,0.04)',
                   border: `1px solid ${ativo ? `${m.color}40` : 'rgba(255,255,255,0.07)'}`,
@@ -176,10 +211,14 @@ function CheckoutBody({
         </div>
       </div>
 
-      <div className="overflow-y-auto overscroll-contain px-5 py-4" style={{ maxHeight: 'min(55vh, 420px)' }}>
+      <div
+        className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 min-h-[200px]"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         {loadingKey ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
             <Loader2 size={28} className="animate-spin text-slate-500" />
+            <p className="text-xs text-slate-500">Carregando pagamento...</p>
           </div>
         ) : stripeNaoConfigurado ? (
           <div className="py-8 text-center">
@@ -208,7 +247,7 @@ function CheckoutBody({
                 <button
                   type="button"
                   onClick={() => { navigator.clipboard.writeText(pixCode); setPixCopiado(true); setTimeout(() => setPixCopiado(false), 2000); }}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold touch-manipulation"
                   style={{ background: pixCopiado ? '#00E87A20' : '#1e2a3a', color: pixCopiado ? '#00E87A' : '#94a3b8' }}
                 >
                   <Copy size={14} />
@@ -225,7 +264,7 @@ function CheckoutBody({
             <button
               type="button"
               onClick={onClose}
-              className="mt-5 px-6 py-2.5 rounded-xl font-semibold text-sm text-white"
+              className="mt-5 px-6 py-2.5 rounded-xl font-semibold text-sm text-white touch-manipulation"
               style={{ background: 'linear-gradient(135deg, #00E87A, #059669)' }}
             >
               Fechar
@@ -256,6 +295,7 @@ function CheckoutBody({
                     value={comprador.nome}
                     onChange={(e) => setComprador((c) => ({ ...c, nome: e.target.value }))}
                     placeholder="Nome completo"
+                    autoComplete="name"
                     className="w-full px-3 py-3 rounded-xl text-base text-white outline-none"
                     style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
                   />
@@ -264,6 +304,7 @@ function CheckoutBody({
                     onChange={(e) => setComprador((c) => ({ ...c, cpf: e.target.value }))}
                     placeholder="CPF"
                     inputMode="numeric"
+                    autoComplete="off"
                     className="w-full px-3 py-3 rounded-xl text-base text-white outline-none"
                     style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
                   />
@@ -272,24 +313,24 @@ function CheckoutBody({
                     onChange={(e) => setComprador((c) => ({ ...c, email: e.target.value }))}
                     placeholder="E-mail"
                     type="email"
+                    inputMode="email"
+                    autoComplete="email"
                     className="w-full px-3 py-3 rounded-xl text-base text-white outline-none"
                     style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3" key={`card-${metodo}`}>
                   <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Cartão</p>
                   <StripeField label="Número">
                     <CardNumberElement options={{ style: ELEMENT_STYLE, showIcon: true }} className="w-full" />
                   </StripeField>
-                  <div className="grid grid-cols-2 gap-2">
-                    <StripeField label="Validade">
-                      <CardExpiryElement options={{ style: ELEMENT_STYLE }} className="w-full" />
-                    </StripeField>
-                    <StripeField label="CVV">
-                      <CardCvcElement options={{ style: ELEMENT_STYLE }} className="w-full" />
-                    </StripeField>
-                  </div>
+                  <StripeField label="Validade">
+                    <CardExpiryElement options={{ style: ELEMENT_STYLE }} className="w-full" />
+                  </StripeField>
+                  <StripeField label="CVV">
+                    <CardCvcElement options={{ style: ELEMENT_STYLE }} className="w-full" />
+                  </StripeField>
                   {metodo === 'credito' && maxParcelas > 1 && (
                     <select
                       value={parcelas}
@@ -320,12 +361,15 @@ function CheckoutBody({
       </div>
 
       {!resultado && !loadingKey && !stripeNaoConfigurado && (
-        <div className="px-5 py-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+        <div
+          className="flex-shrink-0 px-5 py-4 border-t"
+          style={{ borderColor: 'rgba(255,255,255,0.07)', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+        >
           <button
             type="button"
             onClick={handlePagar}
             disabled={loading || (metodo !== 'pix' && !stripe)}
-            className="w-full py-3.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-60"
+            className="w-full py-3.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-60 touch-manipulation"
             style={{
               background: metodo === 'pix'
                 ? 'linear-gradient(135deg, #00E87A, #059669)'
@@ -352,20 +396,24 @@ function CheckoutBody({
 function CheckoutModalShell({ children, onClose }) {
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.85)' }}
+      className="checkout-modal-backdrop fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.88)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="w-full max-w-md rounded-2xl overflow-hidden shadow-2xl"
+        className="checkout-modal-panel w-full max-w-md flex flex-col shadow-2xl"
         style={{ background: '#0d1525', border: '1px solid rgba(255,255,255,0.12)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className="flex items-center justify-between px-5 py-4"
-          style={{ background: '#080d1a', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+          className="flex-shrink-0 flex items-center justify-between px-5 py-4"
+          style={{
+            background: '#080d1a',
+            borderBottom: '1px solid rgba(255,255,255,0.07)',
+            paddingTop: 'max(0.75rem, env(safe-area-inset-top))',
+          }}
         >
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center"
@@ -377,11 +425,13 @@ function CheckoutModalShell({ children, onClose }) {
               <p className="text-xs text-slate-500">Stripe</p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-white/5" aria-label="Fechar">
+          <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 touch-manipulation" aria-label="Fechar">
             <X size={18} color="#9ca3af" />
           </button>
         </div>
-        {children}
+        <div className="flex flex-col flex-1 min-h-0 overflow-visible">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -391,7 +441,6 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
   const [metodo, setMetodo] = useState('credito');
   const [publishableKey, setPublishableKey] = useState('');
   const [loadingKey, setLoadingKey] = useState(true);
-  const [mounted, setMounted] = useState(false);
 
   const valor = parseFloat(transacao?.valor || 0);
   const maxParcelas = (() => {
@@ -399,13 +448,17 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
     catch { return 12; }
   })();
 
+  useLockBodyScroll(true);
+
   useEffect(() => {
-    setMounted(true);
+    let cancelled = false;
     resolvePublishableKey().then((pk) => {
-      setPublishableKey(pk);
-      setLoadingKey(false);
+      if (!cancelled) {
+        setPublishableKey(pk);
+        setLoadingKey(false);
+      }
     });
-    return () => setMounted(false);
+    return () => { cancelled = true; };
   }, []);
 
   const stripePromise = useMemo(
@@ -426,7 +479,7 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
     loadingKey,
   };
 
-  if (!mounted) return null;
+  if (typeof document === 'undefined') return null;
 
   const modal = (
     <CheckoutModalShell onClose={onClose}>

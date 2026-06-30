@@ -69,7 +69,19 @@ export default function ModalPagamentoParceiro({ especialista, usuario, tipoUsua
 
   return (
     <>
-      {!showStripe && (
+      {showStripe ? (
+        <ModalCheckoutStripe
+          transacao={transacaoVirtual}
+          aluno={usuario}
+          onClose={() => setShowStripe(false)}
+          onSucesso={() => {
+            const id = salvarAgendamento();
+            setShowStripe(false);
+            setPago(true);
+            if (onSuccess) onSuccess({ metodo: 'stripe', valor, comissao, id });
+          }}
+        />
+      ) : (
       <div className="fixed inset-0 z-[150] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}
         onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
         <div className="w-full max-w-sm rounded-2xl overflow-hidden" style={{ background: '#0d1525', border: `1px solid ${BORDER}` }}>
@@ -121,20 +133,6 @@ export default function ModalPagamentoParceiro({ especialista, usuario, tipoUsua
           </div>
         </div>
       </div>
-      )}
-
-      {showStripe && (
-        <ModalCheckoutStripe
-          transacao={transacaoVirtual}
-          aluno={usuario}
-          onClose={() => setShowStripe(false)}
-          onSucesso={() => {
-            const id = salvarAgendamento();
-            setShowStripe(false);
-            setPago(true);
-            if (onSuccess) onSuccess({ metodo: 'stripe', valor, comissao, id });
-          }}
-        />
       )}
     </>
   );
