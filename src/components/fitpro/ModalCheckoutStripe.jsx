@@ -13,7 +13,8 @@ import {
   X, CreditCard, CheckCircle2, AlertCircle, Loader2, Lock, Smartphone, QrCode, Copy,
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { resolvePublishableKey } from '@/lib/stripe-config';
+import { resolvePublishableKey } from '../../lib/stripe-config';
+import MaskedInput from './MaskedInput';
 
 const METODOS = [
   { id: 'credito', label: 'Crédito', icon: CreditCard, color: '#a5b4fc' },
@@ -215,7 +216,6 @@ function Formulario({ transacao, aluno, metodo, valor, maxParcelas, onClose, onS
               <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Dados do comprador</p>
               {[
                 { key: 'nome', placeholder: 'Nome completo', type: 'text', inputMode: 'text', autoComplete: 'name' },
-                { key: 'cpf', placeholder: 'CPF (somente números)', type: 'text', inputMode: 'numeric', autoComplete: 'off' },
                 { key: 'email', placeholder: 'E-mail', type: 'email', inputMode: 'email', autoComplete: 'email' },
               ].map(({ key, ...rest }) => (
                 <input
@@ -227,6 +227,14 @@ function Formulario({ transacao, aluno, metodo, valor, maxParcelas, onClose, onS
                   {...rest}
                 />
               ))}
+              <MaskedInput
+                mask="cpf"
+                value={comprador.cpf}
+                onChange={(e) => setComprador((c) => ({ ...c, cpf: e.target.value }))}
+                placeholder="000.000.000-00"
+                className="w-full px-3 py-3 rounded-xl text-base text-white outline-none"
+                style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
+              />
             </div>
 
             <div className="space-y-2">

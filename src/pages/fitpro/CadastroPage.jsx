@@ -5,6 +5,8 @@ import { useApp, useAuth } from '../../context/FitProContext';
 import { addCredential, emailExists } from '../../lib/fitpro-storage';
 import ModalPlanosBoasVindas from '../../components/fitpro/ModalPlanosBoasVindas';
 import BrandLogo from '../../components/fitpro/BrandLogo';
+import MaskedInput from '../../components/fitpro/MaskedInput';
+import { isDataFuturaIso } from '../../lib/fitpro-masks';
 
 const estados = [
   { uf: 'AC', nome: 'Acre' },
@@ -72,6 +74,7 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
     if (step === 1) {
       if (!nome.trim()) return setErro('Nome é obrigatório');
       if (!email.includes('@')) return setErro('Email inválido');
+      if (tipo === 'aluno' && dataNasc && isDataFuturaIso(dataNasc)) return setErro('Data de nascimento não pode ser futura');
     }
     setStep(s => s + 1);
   };
@@ -166,6 +169,8 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
 
   const accentColor = tipo === 'aluno' ? '#a78bfa' : '#34d399';
   const steps = ['Dados Pessoais', 'Endereço', 'Acesso'];
+  const inpClass = 'w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none';
+  const inpStyle = { background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#0a0e1a' }}>
@@ -194,16 +199,21 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
               {[
                 { label: 'Nome Completo', value: nome, onChange: e => setNome(e.target.value), placeholder: 'Seu nome completo' },
                 { label: 'Email', value: email, onChange: e => setEmail(e.target.value), placeholder: 'seu@email.com', type: 'email' },
-                { label: 'Telefone', value: telefone, onChange: e => setTelefone(e.target.value), placeholder: '(11) 99999-9999' },
               ].map(f => (
                 <div key={f.label}>
                   <label className="text-xs text-slate-400 block mb-1">{f.label}</label>
-                  <input {...f} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                  <input {...f} className={inpClass} style={inpStyle} />
                 </div>
               ))}
               <div>
+                <label className="text-xs text-slate-400 block mb-1">Telefone</label>
+                <MaskedInput mask="telefone" value={telefone} onChange={e => setTelefone(e.target.value)}
+                  placeholder="(11) 99999-9999" className={inpClass} style={inpStyle} />
+              </div>
+              <div>
                 <label className="text-xs text-slate-400 block mb-1">Data de Nascimento</label>
-                <input type="date" value={dataNasc} onChange={e => setDataNasc(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                <MaskedInput mask="data" value={dataNasc} onChange={e => setDataNasc(e.target.value)}
+                  className={inpClass} style={inpStyle} />
               </div>
               <div>
                 <label className="text-xs text-slate-400 block mb-1">Sexo</label>
@@ -232,7 +242,11 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
                 </div>
               </>}
               {tipo === 'professor' && <>
-                <div><label className="text-xs text-slate-400 block mb-1">CREF</label><input value={cref} onChange={e => setCref(e.target.value)} placeholder="000000-G/SP" className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} /></div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">CREF</label>
+                  <MaskedInput mask="cref" value={cref} onChange={e => setCref(e.target.value)}
+                    placeholder="000000-G/SP" className={inpClass} style={inpStyle} />
+                </div>
                 <div>
                   <label className="text-xs text-slate-400 block mb-1">Especialidade</label>
                   <select value={especialidade} onChange={e => setEspecialidade(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -252,10 +266,18 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
                 { label: 'Número', field: 'numero', placeholder: '123' },
                 { label: 'Complemento', field: 'complemento', placeholder: 'Apto 42' },
                 { label: 'Bairro', field: 'bairro', placeholder: 'Centro' },
-                { label: 'CEP', field: 'cep', placeholder: '00000-000' },
+                { label: 'CEP', field: 'cep', placeholder: '00000-000', mask: 'cep' },
                 { label: 'Cidade', field: 'cidade', placeholder: 'São Paulo' },
               ].map(f => (
-                <div key={f.field}><label className="text-xs text-slate-400 block mb-1">{f.label}</label><input value={endereco[f.field]} onChange={e => setAddr(f.field, e.target.value)} placeholder={f.placeholder} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} /></div>
+                <div key={f.field}>
+                  <label className="text-xs text-slate-400 block mb-1">{f.label}</label>
+                  {f.mask ? (
+                    <MaskedInput mask={f.mask} value={endereco[f.field]} onChange={e => setAddr(f.field, e.target.value)}
+                      placeholder={f.placeholder} className={inpClass} style={inpStyle} />
+                  ) : (
+                    <input value={endereco[f.field]} onChange={e => setAddr(f.field, e.target.value)} placeholder={f.placeholder} className={inpClass} style={inpStyle} />
+                  )}
+                </div>
               ))}
               <div><label className="text-xs text-slate-400 block mb-1">Estado</label>
                 <select value={endereco.estado} onChange={e => setAddr('estado', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>

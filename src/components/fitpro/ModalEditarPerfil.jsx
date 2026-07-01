@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, User, Phone, Mail, MapPin, Lock, Eye, EyeOff } from 'lucide-react';
 import { useApp } from '../../context/FitProContext';
 import { getCredentials, updateCredential } from '../../lib/fitpro-storage';
+import MaskedInput from './MaskedInput';
 
 const BORDER = 'rgba(255,255,255,0.07)';
 
@@ -117,13 +118,13 @@ export default function ModalEditarPerfil({ user, tipoUsuario, onClose }) {
             </div>
             <div>
               <label className="text-xs text-slate-400 block mb-1 flex items-center gap-1"><Phone size={11} />Telefone / WhatsApp</label>
-              <input value={form.telefone} onChange={e => setForm(f => ({ ...f, telefone: e.target.value }))}
+              <MaskedInput mask="telefone" value={form.telefone} onChange={e => setForm(f => ({ ...f, telefone: e.target.value }))}
                 placeholder="(11) 99999-9999" className={inp} style={inpStyle} />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs text-slate-400 block mb-1">Data de Nascimento</label>
-                <input type="date" value={form.dataNascimento} onChange={e => setForm(f => ({ ...f, dataNascimento: e.target.value }))}
+                <MaskedInput mask="data" value={form.dataNascimento} onChange={e => setForm(f => ({ ...f, dataNascimento: e.target.value }))}
                   className={inp} style={inpStyle} />
               </div>
               <div>
@@ -170,7 +171,7 @@ export default function ModalEditarPerfil({ user, tipoUsuario, onClose }) {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs text-slate-400 block mb-1">CREF</label>
-                  <input value={form.cref} onChange={e => setForm(f => ({ ...f, cref: e.target.value }))}
+                  <MaskedInput mask="cref" value={form.cref} onChange={e => setForm(f => ({ ...f, cref: e.target.value }))}
                     placeholder="000000-G/SP" className={inp} style={inpStyle} />
                 </div>
                 <div>
@@ -193,7 +194,7 @@ export default function ModalEditarPerfil({ user, tipoUsuario, onClose }) {
             <div className="flex gap-2">
               <div className="flex-1">
                 <label className="text-xs text-slate-400 block mb-1">CEP</label>
-                <input value={form.endereco.cep} onChange={e => setForm(f => ({ ...f, endereco: { ...f.endereco, cep: e.target.value } }))}
+                <MaskedInput mask="cep" value={form.endereco.cep} onChange={e => setForm(f => ({ ...f, endereco: { ...f.endereco, cep: e.target.value } }))}
                   placeholder="00000-000" className={inp} style={inpStyle} />
               </div>
             </div>

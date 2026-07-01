@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DollarSign, Plus, X, TrendingUp, Clock, AlertCircle, CheckCircle2, UserCheck, Zap, Ban, Trash2, QrCode, Save, Copy, Eye, Edit2, CreditCard } from 'lucide-react';
 import ModalIntegracaoStripe from '../../components/fitpro/ModalIntegracaoStripe';
 import ModalCheckoutStripe from '../../components/fitpro/ModalCheckoutStripe';
+import MaskedInput from '../../components/fitpro/MaskedInput';
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/FitProContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
@@ -607,10 +608,21 @@ export default function FinanceiroAdminView() {
                   </div>
                   <div>
                     <label className="text-xs text-slate-400 block mb-1">Chave PIX</label>
-                    <input value={pixForm.chave} onChange={e => setPixForm(f => ({ ...f, chave: e.target.value }))}
-                      placeholder={pixForm.tipochave === 'cpf' ? '000.000.000-00' : pixForm.tipochave === 'email' ? 'email@ex.com' : 'Chave PIX'}
-                      className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                      style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                    {['cpf', 'cnpj', 'telefone'].includes(pixForm.tipochave) ? (
+                      <MaskedInput
+                        mask={pixForm.tipochave === 'cnpj' ? 'cnpj' : pixForm.tipochave === 'telefone' ? 'telefone' : 'cpf'}
+                        value={pixForm.chave}
+                        onChange={e => setPixForm(f => ({ ...f, chave: e.target.value }))}
+                        placeholder={pixForm.tipochave === 'cpf' ? '000.000.000-00' : pixForm.tipochave === 'cnpj' ? '00.000.000/0000-00' : '(11) 99999-9999'}
+                        className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                        style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
+                      />
+                    ) : (
+                      <input value={pixForm.chave} onChange={e => setPixForm(f => ({ ...f, chave: e.target.value }))}
+                        placeholder={pixForm.tipochave === 'email' ? 'email@ex.com' : 'Chave PIX'}
+                        className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                        style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                    )}
                   </div>
                 </div>
 

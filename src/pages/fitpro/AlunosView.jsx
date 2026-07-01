@@ -10,9 +10,12 @@ import VerFeedbackModal from '../../components/fitpro/VerFeedbackModal';
 import { contarAlunosProfessor, podeCadastrarAluno, professorNoLimiteGratuito } from '../../lib/planos-professor';
 import ModalPlanosBoasVindas from '../../components/fitpro/ModalPlanosBoasVindas';
 import PARQVerRespostasModal from '../../components/fitpro/PARQVerRespostasModal';
+import MaskedInput from '../../components/fitpro/MaskedInput';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
+const inpClass = 'w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none';
+const inpStyle = { background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' };
 
 const emptyAluno = { nome: '', email: '', telefone: '', dataNascimento: '', sexo: 'M', peso: '', altura: '', objetivo: '', observacoes: '', professorId: '', endereco: { rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '' } };
 
@@ -288,14 +291,18 @@ export default function AlunosView({ roleOverride }) {
                 {[
                   { label: 'Nome', field: 'nome', placeholder: 'Nome completo' },
                   { label: 'Email', field: 'email', placeholder: 'email@exemplo.com' },
-                  { label: 'Telefone', field: 'telefone', placeholder: '(11) 99999-9999' },
                 ].map(f => (
                   <div key={f.field}>
                     <label className="text-xs text-slate-400 block mb-1">{f.label}</label>
                     <input value={form[f.field] || ''} onChange={e => setForm(prev => ({ ...prev, [f.field]: e.target.value }))} placeholder={f.placeholder}
-                      className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                      className={inpClass} style={inpStyle} />
                   </div>
                 ))}
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Telefone</label>
+                  <MaskedInput mask="telefone" value={form.telefone || ''} onChange={e => setForm(prev => ({ ...prev, telefone: e.target.value }))}
+                    placeholder="(11) 99999-9999" className={inpClass} style={inpStyle} />
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div><label className="text-xs text-slate-400 block mb-1">Peso (kg)</label><input type="number" value={form.peso} onChange={e => setForm(p => ({ ...p, peso: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} /></div>
                   <div><label className="text-xs text-slate-400 block mb-1">Altura (cm)</label><input type="number" value={form.altura} onChange={e => setForm(p => ({ ...p, altura: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} /></div>
@@ -440,17 +447,22 @@ export default function AlunosView({ roleOverride }) {
               {[
                 { label: 'Nome', field: 'nome', placeholder: 'Nome completo' },
                 { label: 'Email', field: 'email', placeholder: 'email@exemplo.com' },
-                { label: 'Telefone', field: 'telefone', placeholder: '(11) 99999-9999' },
               ].map(f => (
                 <div key={f.field}>
                   <label className="text-xs text-slate-400 block mb-1">{f.label}</label>
                   <input value={form[f.field] || ''} onChange={e => setForm(prev => ({ ...prev, [f.field]: e.target.value }))} placeholder={f.placeholder}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                    className={inpClass} style={inpStyle} />
                 </div>
               ))}
               <div>
+                <label className="text-xs text-slate-400 block mb-1">Telefone</label>
+                <MaskedInput mask="telefone" value={form.telefone || ''} onChange={e => setForm(prev => ({ ...prev, telefone: e.target.value }))}
+                  placeholder="(11) 99999-9999" className={inpClass} style={inpStyle} />
+              </div>
+              <div>
                 <label className="text-xs text-slate-400 block mb-1">Data de Nascimento</label>
-                <input type="date" value={form.dataNascimento} onChange={e => setForm(p => ({ ...p, dataNascimento: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                <MaskedInput mask="data" value={form.dataNascimento} onChange={e => setForm(p => ({ ...p, dataNascimento: e.target.value }))}
+                  className={inpClass} style={inpStyle} />
               </div>
               <div>
                 <label className="text-xs text-slate-400 block mb-1">Sexo</label>

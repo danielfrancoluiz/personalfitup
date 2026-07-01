@@ -3,6 +3,7 @@ import { UserCheck, Plus, X, Trash2, Edit2, ChevronRight, Search, Phone, Mail, C
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/FitProContext';
 import { getCredentials, addCredential, deleteCredential } from '../../lib/fitpro-storage';
+import MaskedInput from '../../components/fitpro/MaskedInput';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -264,8 +265,6 @@ export default function ProfessoresView() {
                 {[
                   { label: 'Nome', field: 'nome', placeholder: 'Nome completo' },
                   { label: 'Email', field: 'email', placeholder: 'email@exemplo.com' },
-                  { label: 'Telefone', field: 'telefone', placeholder: '(11) 99999-9999' },
-                  { label: 'CREF', field: 'cref', placeholder: '000000-G/SP' },
                 ].map(f => (
                   <div key={f.field}>
                     <label className="text-xs text-slate-400 block mb-1">{f.label}</label>
@@ -274,6 +273,18 @@ export default function ProfessoresView() {
                       style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
                   </div>
                 ))}
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Telefone</label>
+                  <MaskedInput mask="telefone" value={form.telefone || ''} onChange={e => setForm(p => ({ ...p, telefone: e.target.value }))}
+                    placeholder="(11) 99999-9999" className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">CREF</label>
+                  <MaskedInput mask="cref" value={form.cref || ''} onChange={e => setForm(p => ({ ...p, cref: e.target.value }))}
+                    placeholder="000000-G/SP" className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                </div>
                 <div>
                   <label className="text-xs text-slate-400 block mb-1">Especialidade</label>
                   <select value={form.especialidade || ''} onChange={e => setForm(p => ({ ...p, especialidade: e.target.value }))}

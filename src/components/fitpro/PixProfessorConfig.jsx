@@ -5,6 +5,7 @@ import { QrCode, Save, Copy, Eye, X } from 'lucide-react';
 const BRAND_GREEN = '#00E87A';
 const BRAND_BLUE = '#00AAFF';
 import { base44 } from '@/api/base44Client';
+import MaskedInput from './MaskedInput';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -158,10 +159,21 @@ export default function PixProfessorConfig({ professorId }) {
               </div>
               <div>
                 <label className="text-xs text-slate-400 block mb-1">Chave PIX</label>
-                <input value={pixForm.chave} onChange={e => setPixForm(f => ({ ...f, chave: e.target.value }))}
-                  placeholder={pixForm.tipochave === 'cpf' ? '000.000.000-00' : pixForm.tipochave === 'email' ? 'email@ex.com' : 'Chave PIX'}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                {['cpf', 'cnpj', 'telefone'].includes(pixForm.tipochave) ? (
+                  <MaskedInput
+                    mask={pixForm.tipochave === 'cnpj' ? 'cnpj' : pixForm.tipochave === 'telefone' ? 'telefone' : 'cpf'}
+                    value={pixForm.chave}
+                    onChange={e => setPixForm(f => ({ ...f, chave: e.target.value }))}
+                    placeholder={pixForm.tipochave === 'cpf' ? '000.000.000-00' : pixForm.tipochave === 'cnpj' ? '00.000.000/0000-00' : '(11) 99999-9999'}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
+                  />
+                ) : (
+                  <input value={pixForm.chave} onChange={e => setPixForm(f => ({ ...f, chave: e.target.value }))}
+                    placeholder={pixForm.tipochave === 'email' ? 'email@ex.com' : 'Chave PIX'}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                )}
               </div>
             </div>
 

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Stethoscope, Plus, X, Star, Edit2, Trash2, Percent, ShoppingCart, Upload, ImageIcon } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import ModalPagamentoParceiro from '../../components/fitpro/ModalPagamentoParceiro';
+import MaskedInput from '../../components/fitpro/MaskedInput';
 import { base44 } from '@/api/base44Client';
 
 const CARD = '#0d1525';
@@ -205,8 +206,6 @@ export default function EspecialistasView() {
               {[
                 { label: 'Nome', field: 'nome', placeholder: 'Nome completo' },
                 { label: 'Email', field: 'email', placeholder: 'email@exemplo.com' },
-                { label: 'Telefone', field: 'telefone', placeholder: '(11) 99999-9999' },
-                { label: 'WhatsApp', field: 'whatsapp', placeholder: '5511999999999' },
               ].map(f => (
                 <div key={f.field}>
                   <label className="text-xs text-slate-400 block mb-1">{f.label}</label>
@@ -215,6 +214,18 @@ export default function EspecialistasView() {
                     style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
                 </div>
               ))}
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Telefone</label>
+                <MaskedInput mask="telefone" value={form.telefone || ''} onChange={e => setForm(p => ({ ...p, telefone: e.target.value }))}
+                  placeholder="(11) 99999-9999" className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">WhatsApp</label>
+                <MaskedInput mask="whatsapp" value={form.whatsapp || ''} onChange={e => setForm(p => ({ ...p, whatsapp: e.target.value }))}
+                  placeholder="55 (11) 99999-9999" className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+              </div>
               <div>
                 <label className="text-xs text-slate-400 block mb-1">Especialidade</label>
                 <select value={form.especialidade} onChange={e => setForm(p => ({ ...p, especialidade: e.target.value }))}
