@@ -38,7 +38,7 @@ const estados = [
 const emptyAddr = { rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '' };
 
 export default function CadastroPage({ onBack, tipoInicial, professorIdInicial = '' }) {
-  const { addAluno, addProfessor, professores } = useApp();
+  const { addAluno, addProfessor, updateProfessor, addTransacao, updateTransacao } = useApp();
   const { login } = useAuth();
 
   const [tipo, setTipo] = useState(tipoInicial || 'escolha');
@@ -47,6 +47,7 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [showPlanos, setShowPlanos] = useState(false);
+  const [profIdCriado, setProfIdCriado] = useState(null);
   const [erro, setErro] = useState('');
 
   const [nome, setNome] = useState('');
@@ -91,8 +92,12 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
       await new Promise(r => setTimeout(r, 1500));
       await login(email, password);
     } else {
-      const profId = await addProfessor({ nome, email, telefone, cref, especialidade, endereco });
+      const profId = await addProfessor({
+        nome, email, telefone, cref, especialidade, endereco,
+        planoCobranca: 'basico', planoAssinatura: 'Básico', statusPlano: 'ativo',
+      });
       await addCredential({ email, password, role: 'professor', nome, linkedId: profId, ativo: true, autoRegistrado: true });
+      setProfIdCriado(profId);
       setShowPlanos(true);
     }
 
@@ -103,7 +108,18 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
     <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0e1a' }}>
       <ModalPlanosBoasVindas
         nomeProf={nome}
+        professorId={profIdCriado}
+        professor={{ nome, email }}
+        modo="cadastro"
+        updateProfessor={updateProfessor}
+        addTransacao={addTransacao}
+        updateTransacao={updateTransacao}
         onClose={async () => {
+          setShowPlanos(false);
+          setDone(true);
+          await login(email, password);
+        }}
+        onComplete={async () => {
           setShowPlanos(false);
           setDone(true);
           await login(email, password);

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Plus, ChevronRight, Activity, Dumbbell, Calendar, Phone, Mail, Trash2, Edit2, Save, X, Filter, MessageCircle, Eye, EyeOff, MessageSquare, Bell } from 'lucide-react';
+import { Users, Search, Plus, ChevronRight, Activity, Dumbbell, Calendar, Phone, Mail, Trash2, Edit2, Save, X, Filter, MessageCircle, Eye, EyeOff, MessageSquare, Bell, AlertCircle } from 'lucide-react';
 import AlunoListItem from '../../components/fitpro/AlunoListItem';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, addCredential } from '../../lib/fitpro-storage';
 import { calcularIdade, calcularIMC, classificarIMC } from '../../lib/fitpro-calculations';
 import { base44 } from '@/api/base44Client';
 import VerFeedbackModal from '../../components/fitpro/VerFeedbackModal';
+import { contarAlunosProfessor, podeCadastrarAluno, professorNoLimiteGratuito } from '../../lib/planos-professor';
+import ModalPlanosBoasVindas from '../../components/fitpro/ModalPlanosBoasVindas';
 import PARQVerRespostasModal from '../../components/fitpro/PARQVerRespostasModal';
 
 const CARD = '#0d1525';
@@ -15,7 +17,7 @@ const BORDER = 'rgba(255,255,255,0.07)';
 const emptyAluno = { nome: '', email: '', telefone: '', dataNascimento: '', sexo: 'M', peso: '', altura: '', objetivo: '', observacoes: '', professorId: '', endereco: { rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '' } };
 
 export default function AlunosView({ roleOverride }) {
-  const { alunos, professores, avaliacoes, planosTreino, periodizacoes, addAluno, updateAluno, deleteAluno } = useApp();
+  const { alunos, professores, avaliacoes, planosTreino, periodizacoes, addAluno, updateAluno, deleteAluno, updateProfessor, addTransacao, updateTransacao } = useApp();
   const { user } = useAuth();
   const role = roleOverride || user?.role;
 
@@ -55,6 +57,27 @@ export default function AlunosView({ roleOverride }) {
   const [verFeedbackAluno, setVerFeedbackAluno] = useState(null);
   const [verPARQAluno, setVerPARQAluno] = useState(null);
   const [enviandoPARQ, setEnviandoPARQ] = useState(false);
+  const [showUpgradePlano, setShowUpgradePlano] = useState(false);
+  const [pendenteNovoAluno, setPendenteNovoAluno] = useState(false);
+
+  const meuProfessor = professores.find(p => p.id === professorId);
+  const qtdMeusAlunos = contarAlunosProfessor(alunos, professorId);
+  const noLimiteGratuito = role === 'professor' && professorNoLimiteGratuito(meuProfessor, qtdMeusAlunos);
+
+  const abrirFormNovoAluno = () => {
+    if (role === 'professor' && professorId) {
+      const prof = professores.find(p => p.id === professorId);
+      const qtd = contarAlunosProfessor(alunos, professorId);
+      if (!podeCadastrarAluno(prof, qtd)) {
+        setPendenteNovoAluno(true);
+        setShowUpgradePlano(true);
+        return;
+      }
+    }
+    setForm({ ...emptyAluno, professorId });
+    setEditId(null);
+    setShowForm(true);
+  };
 
   // Carrega feedbacks não lidos ao montar
   useEffect(() => {
@@ -72,8 +95,16 @@ export default function AlunosView({ roleOverride }) {
 
   const handleSave = async () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
-    // Para professores, sempre vincular o professorId automaticamente
     const assignedProfessorId = role === 'professor' ? professorId : (form.professorId || '');
+    if (!editId && role === 'professor' && assignedProfessorId) {
+      const prof = professores.find(p => p.id === assignedProfessorId);
+      const qtd = contarAlunosProfessor(alunos, assignedProfessorId);
+      if (!podeCadastrarAluno(prof, qtd)) {
+        setPendenteNovoAluno(true);
+        setShowUpgradePlano(true);
+        return;
+      }
+    }
     const data = { ...form, peso: parseFloat(form.peso) || 0, altura: parseFloat(form.altura) || 0, professorId: assignedProfessorId };
     if (editId) { await updateAluno(editId, data); setSelectedAluno({ ...selectedAluno, ...data }); }
     else {
@@ -292,7 +323,7 @@ export default function AlunosView({ roleOverride }) {
         <div><h2 className="text-xl font-bold text-white">{role === 'professor' ? 'Meus Alunos' : 'Alunos Cadastrados'}</h2>
           <p className="text-xs text-slate-500">{filtered.length} aluno(s)</p></div>
         {role !== 'admin' && (
-          <button onClick={() => { setForm({ ...emptyAluno, professorId: professorId }); setEditId(null); setShowForm(true); }}
+          <button onClick={abrirFormNovoAluno}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
             style={{ background: '#a78bfa20', color: '#a78bfa', border: '1px solid #a78bfa30' }}>
             <Plus size={14} />Novo Aluno
@@ -308,6 +339,23 @@ export default function AlunosView({ roleOverride }) {
           <p className="text-sm text-slate-300 flex-1">
             <span className="font-bold text-white">{Object.values(feedbacksNaoLidos).reduce((a, b) => a + b, 0)}</span> novo(s) feedback(s) de treino não lido(s)
           </p>
+        </div>
+      )}
+
+      {/* Alerta limite plano gratuito */}
+      {noLimiteGratuito && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+          style={{ background: '#fbbf240d', border: '1px solid #fbbf2435' }}>
+          <AlertCircle size={16} color="#fbbf24" />
+          <p className="text-sm text-slate-300 flex-1">
+            Você atingiu o limite de <span className="font-bold text-white">5 alunos</span> no plano gratuito.
+            Para cadastrar mais alunos, adira a um plano pago.
+          </p>
+          <button onClick={() => { setPendenteNovoAluno(true); setShowUpgradePlano(true); }}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold flex-shrink-0"
+            style={{ background: '#fbbf2420', color: '#fbbf24', border: '1px solid #fbbf2430' }}>
+            Ver planos
+          </button>
         </div>
       )}
 
@@ -454,6 +502,31 @@ export default function AlunosView({ roleOverride }) {
             <button onClick={handleSave} className="w-full mt-4 py-3 rounded-xl font-semibold text-sm text-white" style={{ background: 'linear-gradient(135deg, #a78bfa, #7c3aed)' }}>Cadastrar Aluno</button>
           </div>
         </div>
+      )}
+
+      {showUpgradePlano && (
+        <ModalPlanosBoasVindas
+          nomeProf={meuProfessor?.nome}
+          professorId={professorId}
+          professor={meuProfessor}
+          modo="upgrade"
+          updateProfessor={updateProfessor}
+          addTransacao={addTransacao}
+          updateTransacao={updateTransacao}
+          onClose={() => {
+            setShowUpgradePlano(false);
+            setPendenteNovoAluno(false);
+          }}
+          onComplete={() => {
+            setShowUpgradePlano(false);
+            if (pendenteNovoAluno) {
+              setPendenteNovoAluno(false);
+              setForm({ ...emptyAluno, professorId });
+              setEditId(null);
+              setShowForm(true);
+            }
+          }}
+        />
       )}
     </div>
   );

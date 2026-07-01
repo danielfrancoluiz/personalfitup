@@ -40,7 +40,7 @@ const PLANO_COLOR = { basico: '#60a5fa', profissional: '#34d399', premium: '#fbb
 
 const emptyForm = {
   nome: '', email: '', telefone: '', cref: '', especialidade: '',
-  planoCobranca: 'profissional', statusPlano: 'ativo', dataVencimento: '',
+  planoCobranca: 'basico', statusPlano: 'ativo', dataVencimento: '',
   endereco: { rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '' }
 };
 
