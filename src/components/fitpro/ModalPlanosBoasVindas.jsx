@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Check, Zap, AlertCircle } from 'lucide-react';
-import { loadPlanos, isPlanoGratuito, dadosVigenciaPlanoPago, getPrecoPlanoAtual, limparContratoPlano } from '../../lib/planos-professor';
+import { loadPlanos, loadPlanosAsync, isPlanoGratuito, dadosVigenciaPlanoPago, getPrecoPlanoAtual, limparContratoPlano, PLANOS_DEFAULT } from '../../lib/planos-professor';
 import ModalCheckoutStripe from './ModalCheckoutStripe';
 
 export default function ModalPlanosBoasVindas({
@@ -14,7 +14,20 @@ export default function ModalPlanosBoasVindas({
   onClose,
   onComplete,
 }) {
-  const planos = loadPlanos();
+  const [planos, setPlanos] = useState(loadPlanos);
+  const [carregandoPlanos, setCarregandoPlanos] = useState(true);
+
+  useEffect(() => {
+    let ativo = true;
+    loadPlanosAsync(true).then((p) => {
+      if (ativo) {
+        setPlanos(p);
+        setCarregandoPlanos(false);
+      }
+    });
+    return () => { ativo = false; };
+  }, []);
+
   const planosVisiveis = modo === 'upgrade' ? planos.filter(p => p.preco > 0) : planos;
   const [selecionado, setSelecionado] = useState(modo === 'upgrade' ? 'profissional' : 'basico');
   const [periodoContrato, setPeriodoContrato] = useState('mensal');
@@ -147,7 +160,9 @@ export default function ModalPlanosBoasVindas({
           </div>
 
           <div className="overflow-y-auto flex-1 p-5 space-y-3">
-            {planosVisiveis.map(plano => {
+            {carregandoPlanos ? (
+              <p className="text-sm text-slate-500 text-center py-8">Carregando planos...</p>
+            ) : planosVisiveis.map(plano => {
               const Icon = plano.icon;
               const selected = selecionado === plano.id;
               return (
@@ -171,15 +186,9 @@ export default function ModalPlanosBoasVindas({
                           {plano.preco > 0 && <span className="text-xs font-normal text-slate-500">/mês</span>}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500 mb-2">{plano.desc}</p>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1">
-                        {plano.recursos.map(r => (
-                          <span key={r} className="flex items-center gap-1 text-xs" style={{ color: selected ? plano.color : '#64748b' }}>
-                            <Check size={10} />
-                            {r}
-                          </span>
-                        ))}
-                      </div>
+                      <p className="text-xs text-slate-400">
+                        {plano.desc || PLANOS_DEFAULT.find(p => p.id === plano.id)?.desc || ''}
+                      </p>
                     </div>
                     {selected && (
                       <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"

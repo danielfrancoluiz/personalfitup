@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu } from 'lucide-react';
 import NotificacoesSininho from '../components/fitpro/NotificacoesSininho';
+import SuporteProfessor from '../components/fitpro/SuporteProfessor';
 import { FitProAppProvider, FitProAuthProvider, useAuth } from '../context/FitProContext';
 import Sidebar, { adminNav, professorNav, alunoNav } from './fitpro/Sidebar';
 import LoginPage from './fitpro/LoginPage';
@@ -138,6 +139,7 @@ function AuthenticatedApp() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {isProfessor && <SuporteProfessor user={user} />}
             <NotificacoesSininho user={user} />
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
               style={{ background: `${roleColor}25` }}>
