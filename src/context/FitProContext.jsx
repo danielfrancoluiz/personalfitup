@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { login as doLogin, logout as doLogout, getSession, generateId } from '../lib/fitpro-storage';
+import { login as doLogin, logout as doLogout, validateSession, generateId } from '../lib/fitpro-storage';
+import { initPlanos } from '../lib/planos-professor';
 
 // ── App Context ──────────────────────────────────────────────────────────────
 const AppContext = createContext(null);
@@ -26,8 +27,9 @@ export function FitProAppProvider({ children }) {
     async function loadAll() {
       try {
         const [
-          al, pr, av, pt, per, esp, ex, prod, tr, pc, ag, bt
+          , al, pr, av, pt, per, esp, ex, prod, tr, pc, ag, bt
         ] = await Promise.all([
+          initPlanos(),
           base44.entities.Aluno.list(),
           base44.entities.Professor.list(),
           base44.entities.Avaliacao.list(),
@@ -286,7 +288,31 @@ export function useApp() {
 const AuthContext = createContext(null);
 
 export function FitProAuthProvider({ children }) {
-  const [user, setUser] = useState(getSession);
+  const [user, setUser] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    validateSession().then((u) => {
+      setUser(u);
+      setAuthReady(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!user) return undefined;
+
+    const check = async () => {
+      const u = await validateSession();
+      if (!u) setUser(null);
+    };
+
+    const interval = setInterval(check, 30_000);
+    window.addEventListener('focus', check);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', check);
+    };
+  }, [user]);
 
   const login = useCallback(async (email, password) => {
     const u = await doLogin(email, password);
@@ -301,6 +327,7 @@ export function FitProAuthProvider({ children }) {
 
   const value = {
     user,
+    authReady,
     login,
     logout,
     isAdmin: user?.role === 'admin',

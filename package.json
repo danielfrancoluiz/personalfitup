@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "migrate:from-base44": "node scripts/migrate-from-base44.mjs",
     "db:apply-schema": "node scripts/apply-schema.mjs",
+    "db:apply-planos": "node scripts/apply-migration-planos.mjs",
     "db:test": "node scripts/test-supabase.mjs"
   },
   "dependencies": {

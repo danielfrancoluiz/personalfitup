@@ -6,6 +6,15 @@ export function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
+function generateSessionToken() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return generateId() + generateId();
+}
+
+export const SESSION_EXPIRED_KEY = 'fitpro_session_expired';
+
 // ── Credenciais (via Supabase) ──────────────────────────────────────────
 export async function getCredentials() {
   return await base44.entities.Credencial.list();
@@ -34,7 +43,7 @@ export async function emailExists(email) {
   return creds.some(c => normalizeEmail(c.email) === norm);
 }
 
-// ── Auth (session via sessionStorage — leve, sem localStorage) ───────────────
+// ── Auth (session via sessionStorage — uma sessão ativa por usuário no servidor) ──
 const SESSION_KEY = 'fitpro_session';
 
 export async function login(email, password) {
@@ -44,6 +53,10 @@ export async function login(email, password) {
     c => normalizeEmail(c.email) === norm && c.password === password && c.ativo
   );
   if (!cred) return null;
+
+  const sessionToken = generateSessionToken();
+  await updateCredential(cred.id, { sessionToken });
+
   const user = {
     id: cred.id,
     nome: cred.nome,
@@ -51,12 +64,22 @@ export async function login(email, password) {
     role: cred.role,
     linkedId: cred.linkedId,
     autoRegistrado: cred.autoRegistrado ?? false,
+    sessionToken,
   };
+  sessionStorage.removeItem(SESSION_EXPIRED_KEY);
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
   return user;
 }
 
-export function logout() {
+export async function logout() {
+  const user = getSession();
+  if (user?.id) {
+    try {
+      await updateCredential(user.id, { sessionToken: '' });
+    } catch {
+      // ignora falha de rede no logout
+    }
+  }
   sessionStorage.removeItem(SESSION_KEY);
 }
 
@@ -67,5 +90,24 @@ export function getSession() {
     return JSON.parse(raw);
   } catch {
     return null;
+  }
+}
+
+/** Valida token da sessão no servidor — invalida login em outro dispositivo */
+export async function validateSession() {
+  const user = getSession();
+  if (!user?.id || !user?.sessionToken) return null;
+
+  try {
+    const cred = await base44.entities.Credencial.get(user.id);
+    if (!cred.ativo || cred.sessionToken !== user.sessionToken) {
+      sessionStorage.setItem(SESSION_EXPIRED_KEY, '1');
+      sessionStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return user;
+  } catch {
+    // Sem rede: mantém sessão local até próxima validação
+    return user;
   }
 }

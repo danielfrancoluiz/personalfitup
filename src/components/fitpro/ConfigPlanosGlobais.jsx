@@ -1,25 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { Pencil, Check, X, Zap } from 'lucide-react';
-import { loadPlanos, savePlanos, loadPlanosAsync, savePlanosAsync, PLANO_COLOR, PLANOS_DEFAULT } from '../../lib/planos-professor';
+import { savePlanos, loadPlanosAsync, savePlanosAsync, PLANO_COLOR, PLANOS_DEFAULT } from '../../lib/planos-professor';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 
 export default function ConfigPlanosGlobais() {
-  const [planos, setPlanos] = useState(loadPlanos);
+  const [planos, setPlanos] = useState(PLANOS_DEFAULT);
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadPlanosAsync().then((p) => {
+    loadPlanosAsync(true).then((p) => {
       setPlanos(p);
       setLoading(false);
     });
   }, []);
 
   const salvarPlano = async (planoId) => {
+    setSaveError('');
     const newData = {
       ...editData,
       preco: planoId === 'basico' ? 0 : (parseFloat(editData.preco) || 0),
@@ -27,7 +29,11 @@ export default function ConfigPlanosGlobais() {
     const updated = planos.map(p => (p.id === planoId ? { ...p, ...newData } : p));
     setPlanos(updated);
     savePlanos(updated);
-    await savePlanosAsync(updated);
+    const result = await savePlanosAsync(updated);
+    if (!result.ok) {
+      setSaveError(result.error || 'Não foi possível salvar no servidor.');
+      return;
+    }
     setEditingId(null);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -49,6 +55,10 @@ export default function ConfigPlanosGlobais() {
 
       {saved && (
         <div className="text-center text-sm font-semibold text-emerald-400">✓ Planos atualizados para toda a plataforma</div>
+      )}
+
+      {saveError && (
+        <div className="text-center text-sm font-semibold text-amber-400">{saveError}</div>
       )}
 
       <div className="space-y-2">
@@ -118,10 +128,6 @@ export default function ConfigPlanosGlobais() {
           );
         })}
       </div>
-
-      <p className="text-xs text-slate-600 text-center">
-        Padrão: {PLANOS_DEFAULT.map(p => `${p.nome} R$${p.preco}`).join(' · ')}
-      </p>
     </div>
   );
 }

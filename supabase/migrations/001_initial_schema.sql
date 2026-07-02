@@ -33,7 +33,8 @@ DECLARE
     'feedbacks_treino',
     'parq_respostas',
     'solicitacoes_vinculo',
-    'configuracoes_stripe'
+    'configuracoes_stripe',
+    'configuracoes_planos'
   ];
 BEGIN
   FOREACH t IN ARRAY tables LOOP

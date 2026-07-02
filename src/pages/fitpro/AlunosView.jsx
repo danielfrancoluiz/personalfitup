@@ -3,11 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Search, Plus, ChevronRight, Activity, Dumbbell, Calendar, Phone, Mail, Trash2, Edit2, Save, X, Filter, MessageCircle, Eye, EyeOff, MessageSquare, Bell, AlertCircle } from 'lucide-react';
 import AlunoListItem from '../../components/fitpro/AlunoListItem';
 import { useApp, useAuth } from '../../context/FitProContext';
-import { getCredentials, addCredential } from '../../lib/fitpro-storage';
+import { getCredentials, addCredential, updateCredential } from '../../lib/fitpro-storage';
 import { calcularIdade, calcularIMC, classificarIMC } from '../../lib/fitpro-calculations';
 import { base44 } from '@/api/base44Client';
 import VerFeedbackModal from '../../components/fitpro/VerFeedbackModal';
-import { contarAlunosProfessor, podeCadastrarAluno, professorNoLimiteGratuito, professorPrecisaRenovarPlano } from '../../lib/planos-professor';
+import { contarAlunosProfessor, podeCadastrarAluno, professorNoLimiteGratuito, professorPrecisaRenovarPlano, getPlanoEfetivo } from '../../lib/planos-professor';
+import {
+  alunoAtivoEfetivo, getAlunosDoProfessor, professorPodeGerenciarStatusAluno,
+  isAlunoAtivoRegistro, alunoPodeAcessarView,
+} from '../../lib/aluno-status';
 import ModalPlanosBoasVindas from '../../components/fitpro/ModalPlanosBoasVindas';
 import PARQVerRespostasModal from '../../components/fitpro/PARQVerRespostasModal';
 import MaskedInput from '../../components/fitpro/MaskedInput';
@@ -133,9 +137,12 @@ export default function AlunosView({ roleOverride }) {
   const [pendenteNovoAluno, setPendenteNovoAluno] = useState(false);
 
   const meuProfessor = professores.find(p => p.id === professorId);
+  const alunosDoProfessor = getAlunosDoProfessor(alunos, professorId);
   const qtdMeusAlunos = contarAlunosProfessor(alunos, professorId);
   const noLimiteGratuito = role === 'professor' && professorNoLimiteGratuito(meuProfessor, qtdMeusAlunos);
   const planoExpirado = role === 'professor' && professorPrecisaRenovarPlano(meuProfessor);
+  const planoGratuitoEfetivo = role === 'professor' && getPlanoEfetivo(meuProfessor) === 'basico';
+  const podeToggleStatus = role === 'professor' && professorPodeGerenciarStatusAluno(meuProfessor);
 
   const abrirFormNovoAluno = () => {
     if (role === 'professor' && professorId) {
@@ -178,7 +185,7 @@ export default function AlunosView({ roleOverride }) {
         return;
       }
     }
-    const data = { ...form, peso: parseFloat(form.peso) || 0, altura: parseFloat(form.altura) || 0, professorId: assignedProfessorId };
+    const data = { ...form, peso: parseFloat(form.peso) || 0, altura: parseFloat(form.altura) || 0, professorId: assignedProfessorId, ativo: true };
     if (editId) {
       await updateAluno(editId, data);
       if (selectedAluno?.id === editId) setSelectedAluno(prev => ({ ...prev, ...data }));
@@ -217,6 +224,19 @@ export default function AlunosView({ roleOverride }) {
   const handleDelete = async (id) => {
     if (!confirm('Excluir este aluno?')) return;
     await deleteAluno(id); setSelectedAluno(null);
+  };
+
+  const handleToggleAtivo = async (aluno) => {
+    if (!podeToggleStatus) return;
+    const novoAtivo = !isAlunoAtivoRegistro(aluno);
+    await updateAluno(aluno.id, { ativo: novoAtivo });
+    try {
+      const creds = await getCredentials();
+      const cred = creds.find(c => c.linkedId === aluno.id && c.role === 'aluno');
+      if (cred) await updateCredential(cred.id, { ativo: novoAtivo });
+    } catch {
+      /* ignora falha ao sincronizar credencial */
+    }
   };
 
   if (selectedAluno) {
@@ -396,6 +416,19 @@ export default function AlunosView({ roleOverride }) {
         </div>
       )}
 
+      {/* Alerta plano gratuito — status automático */}
+      {planoGratuitoEfetivo && alunosDoProfessor.length > 0 && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+          style={{ background: '#60a5fa0d', border: '1px solid #60a5fa35' }}>
+          <AlertCircle size={16} color="#60a5fa" />
+          <p className="text-sm text-slate-300 flex-1">
+            No plano gratuito, apenas os <span className="font-bold text-white">5 primeiros alunos cadastrados</span> permanecem ativos.
+            Novos alunos já nascem ativos, mas o acesso efetivo segue essa ordem de cadastro.
+            Ativar/desativar manualmente está disponível apenas em planos pagos.
+          </p>
+        </div>
+      )}
+
       {/* Alerta plano expirado */}
       {planoExpirado && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
@@ -467,6 +500,9 @@ export default function AlunosView({ roleOverride }) {
               avaliacoes={avaliacoes}
               planosTreino={planosTreino}
               feedbacksNaoLidos={feedbacksNaoLidos}
+              ativoEfetivo={alunoAtivoEfetivo(aluno, meuProfessor, alunosDoProfessor)}
+              podeToggleStatus={podeToggleStatus}
+              onToggleStatus={role === 'professor' ? handleToggleAtivo : undefined}
               onVerPerfil={setSelectedAluno}
               onVerFeedback={setVerFeedbackAluno}
               onEnviarPARQ={handleEnviarPARQ}

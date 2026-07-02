@@ -31,6 +31,9 @@ import FinanceiroAdminView from './fitpro/FinanceiroAdminView';
 import AgendaView from './fitpro/AgendaView';
 import TreinoCorridaAlunoView from './fitpro/TreinoCorridaAlunoView';
 import PeriodizacaoAlunoView from './fitpro/PeriodizacaoAlunoView';
+import ConsultoriaBloqueada from '../components/fitpro/ConsultoriaBloqueada';
+import { useApp } from '../context/FitProContext';
+import { alunoAtivoEfetivo, getAlunosDoProfessor, alunoPodeAcessarView } from '../lib/aluno-status';
 
 const BG = '#0a0e1a';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -49,15 +52,31 @@ function PlaceholderView({ title }) {
 
 function AuthenticatedApp() {
   const { user, isAdmin, isProfessor, isAluno } = useAuth();
+  const { alunos, professores } = useApp();
   const [activeView, setActiveView] = useState('dashboard');
   const [sideOpen, setSideOpen] = useState(false);
 
   if (!user) return null;
 
+  const alunoRecord = isAluno ? alunos.find(a => a.id === user.linkedId) : null;
+  const professorDoAluno = alunoRecord
+    ? professores.find(p => p.id === alunoRecord.professorId)
+    : null;
+  const alunosDoProf = alunoRecord
+    ? getAlunosDoProfessor(alunos, alunoRecord.professorId)
+    : [];
+  const alunoInativo = isAluno && alunoRecord
+    ? !alunoAtivoEfetivo(alunoRecord, professorDoAluno, alunosDoProf)
+    : false;
+
   const navItems = isAdmin ? adminNav : isProfessor ? professorNav : alunoNav;
   const roleColor = isAdmin ? '#00d4ff' : isProfessor ? '#34d399' : '#a78bfa';
 
   const renderView = () => {
+    if (isAluno && alunoInativo && !alunoPodeAcessarView(activeView, true)) {
+      return <ConsultoriaBloqueada />;
+    }
+
     if (activeView === 'dashboard') {
       if (isAdmin) return <DashboardAdmin onNav={setActiveView} />;
       if (isProfessor) return <DashboardProfessor onNav={setActiveView} />;
@@ -89,7 +108,14 @@ function AuthenticatedApp() {
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: BG, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
-      <Sidebar navItems={navItems} activeView={activeView} onNav={setActiveView} sideOpen={sideOpen} setSideOpen={setSideOpen} />
+      <Sidebar
+        navItems={navItems}
+        activeView={activeView}
+        onNav={setActiveView}
+        sideOpen={sideOpen}
+        setSideOpen={setSideOpen}
+        alunoInativo={alunoInativo}
+      />
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Topbar */}
@@ -128,10 +154,11 @@ function AuthenticatedApp() {
           {navItems.slice(0, 5).map(item => {
             const Icon = item.icon;
             const active = activeView === item.view;
+            const disabled = alunoInativo && !alunoPodeAcessarView(item.view, true);
             return (
               <button key={item.view} onClick={() => setActiveView(item.view)}
                 className="flex flex-col items-center gap-0.5 p-2 rounded-xl transition-all"
-                style={{ color: active ? item.color : '#4b5563' }}>
+                style={{ color: disabled ? '#374151' : active ? item.color : '#4b5563', opacity: disabled ? 0.45 : 1 }}>
                 <Icon size={18} />
                 <span className="text-xs">{item.label.split(' ')[0]}</span>
               </button>
@@ -144,12 +171,20 @@ function AuthenticatedApp() {
 }
 
 function FitProShell() {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   const urlParams = new URLSearchParams(window.location.search);
   const cadastroParam = urlParams.get('cadastro');
   const profParam = urlParams.get('prof');
 
   const [showCadastro, setShowCadastro] = useState(!!cadastroParam);
+
+  if (!authReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#060a14' }}>
+        <div className="w-8 h-8 border-2 border-[#00AAFF] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!user) {
     if (showCadastro) return (

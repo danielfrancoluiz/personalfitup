@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/FitProContext';
 import { sanitizeEmailInput } from '../../lib/email-validation';
+import { SESSION_EXPIRED_KEY } from '../../lib/fitpro-storage';
 import EsqueciSenhaModal from '../../components/fitpro/EsqueciSenhaModal';
 import BrandLogo from '../../components/fitpro/BrandLogo';
 
@@ -28,13 +29,18 @@ export default function LoginPage({ onCadastro }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(() => (
+    sessionStorage.getItem(SESSION_EXPIRED_KEY)
+      ? 'Sua sessão foi encerrada porque este usuário entrou em outro dispositivo.'
+      : ''
+  ));
   const [loading, setLoading] = useState(false);
   const [showEsqueci, setShowEsqueci] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    sessionStorage.removeItem(SESSION_EXPIRED_KEY);
     setLoading(true);
     const ok = await login(sanitizeEmailInput(email), password);
     if (!ok) setError('Email ou senha incorretos. Verifique suas credenciais.');

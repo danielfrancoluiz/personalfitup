@@ -94,7 +94,7 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
     setLoading(true);
 
     if (tipo === 'aluno') {
-      const alunoId = await addAluno({ nome, email: emailNorm, telefone, dataNascimento: dataNasc, sexo, peso: parseFloat(peso) || 0, altura: parseFloat(altura) || 0, objetivo, observacoes: '', endereco, professorId: professorId || '' });
+      const alunoId = await addAluno({ nome, email: emailNorm, telefone, dataNascimento: dataNasc, sexo, peso: parseFloat(peso) || 0, altura: parseFloat(altura) || 0, objetivo, observacoes: '', endereco, professorId: professorId || '', ativo: true });
       await addCredential({ email: emailNorm, password, role: 'aluno', nome, linkedId: alunoId, ativo: true, autoRegistrado: true });
       setDone(true);
       await new Promise(r => setTimeout(r, 1500));

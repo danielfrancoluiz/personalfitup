@@ -1,5 +1,6 @@
 import { Zap, Star, Crown, Building2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 
 export const PLANOS_CONFIG_ID = 'planos_global';
 const STORAGE_KEY = 'fitpro_planos';
@@ -20,6 +21,27 @@ const LIMITES_ALUNOS = {
   enterprise: Infinity,
 };
 
+let _planosMem = null;
+let _planosLoadedAt = 0;
+const CACHE_TTL_MS = 60_000;
+
+function isTableMissingError(err) {
+  const msg = String(err?.message || err || '').toLowerCase();
+  const code = String(err?.code || '');
+  return (
+    code === '42P01' ||
+    code === 'PGRST205' ||
+    msg.includes('404') ||
+    msg.includes('not found') ||
+    msg.includes('does not exist') ||
+    msg.includes('configuracoes_planos')
+  );
+}
+
+function stripPlanoForStorage(plano) {
+  return { id: plano.id, nome: plano.nome, preco: plano.preco, desc: plano.desc };
+}
+
 function mergePlanos(saved) {
   if (!saved || !Array.isArray(saved) || saved.length < 4) return [...PLANOS_DEFAULT];
   return PLANOS_DEFAULT.map(def => {
@@ -29,47 +51,120 @@ function mergePlanos(saved) {
   });
 }
 
-export function loadPlanos() {
+function readLocalCache() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return mergePlanos(saved);
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (Array.isArray(raw)) return null;
+    if (raw?.source === 'server' && Array.isArray(raw.planos)) {
+      return mergePlanos(raw.planos);
+    }
   } catch {
-    return [...PLANOS_DEFAULT];
+    /* ignore */
   }
+  return null;
+}
+
+function writeLocalCache(planos, source = 'server') {
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({ planos: planos.map(stripPlanoForStorage), updatedAt: Date.now(), source }),
+  );
+}
+
+function clearLocalCache() {
+  localStorage.removeItem(STORAGE_KEY);
+  _planosMem = null;
+  _planosLoadedAt = 0;
+}
+
+export function loadPlanos() {
+  if (_planosMem) return _planosMem;
+  const cached = readLocalCache();
+  if (cached) {
+    _planosMem = cached;
+    return cached;
+  }
+  return [...PLANOS_DEFAULT];
 }
 
 export function savePlanos(planos) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(planos));
+  const merged = mergePlanos(planos);
+  _planosMem = merged;
+  _planosLoadedAt = Date.now();
+  writeLocalCache(merged, 'local');
 }
 
-export async function loadPlanosAsync() {
+export async function initPlanos() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (Array.isArray(raw)) clearLocalCache();
+  } catch {
+    /* ignore */
+  }
+  return loadPlanosAsync(true);
+}
+
+export async function loadPlanosAsync(force = false) {
+  if (!force && _planosMem && Date.now() - _planosLoadedAt < CACHE_TTL_MS) {
+    return _planosMem;
+  }
+
   try {
     const rows = await base44.entities.ConfiguracaoPlano.list();
     const row = rows.find(r => r.id === PLANOS_CONFIG_ID) || rows[0];
     if (row?.planos?.length >= 4) {
       const merged = mergePlanos(row.planos);
-      savePlanos(merged);
+      _planosMem = merged;
+      _planosLoadedAt = Date.now();
+      writeLocalCache(merged, 'server');
       return merged;
     }
+    const defaults = [...PLANOS_DEFAULT];
+    _planosMem = defaults;
+    _planosLoadedAt = Date.now();
+    return defaults;
   } catch (e) {
+    if (isTableMissingError(e)) {
+      console.warn('[planos] Tabela configuracoes_planos ausente — usando valores padrão');
+      clearLocalCache();
+      _planosMem = [...PLANOS_DEFAULT];
+      _planosLoadedAt = Date.now();
+      return _planosMem;
+    }
     console.warn('[planos] loadPlanosAsync:', e.message);
+    const cached = readLocalCache();
+    if (cached) {
+      _planosMem = cached;
+      _planosLoadedAt = Date.now();
+      return cached;
+    }
+    _planosMem = [...PLANOS_DEFAULT];
+    return _planosMem;
   }
-  return loadPlanos();
 }
 
 export async function savePlanosAsync(planos) {
-  savePlanos(planos);
+  const merged = mergePlanos(planos);
+  const payload = merged.map(stripPlanoForStorage);
+
+  _planosMem = merged;
+  _planosLoadedAt = Date.now();
+  writeLocalCache(merged, 'server');
+
   try {
-    const payload = { planos };
-    const rows = await base44.entities.ConfiguracaoPlano.list();
-    const existing = rows.find(r => r.id === PLANOS_CONFIG_ID);
-    if (existing) {
-      await base44.entities.ConfiguracaoPlano.update(PLANOS_CONFIG_ID, payload);
-    } else {
-      await base44.entities.ConfiguracaoPlano.create({ id: PLANOS_CONFIG_ID, ...payload });
-    }
+    const { error } = await supabase
+      .from('configuracoes_planos')
+      .upsert({ id: PLANOS_CONFIG_ID, data: { planos: payload } }, { onConflict: 'id' });
+    if (error) throw error;
+    return { ok: true };
   } catch (e) {
+    if (isTableMissingError(e)) {
+      writeLocalCache(merged, 'local');
+      return { ok: false, error: 'Tabela configuracoes_planos não existe no Supabase. Execute a migração.' };
+    }
     console.warn('[planos] savePlanosAsync:', e.message);
+    writeLocalCache(merged, 'local');
+    return { ok: false, error: e.message };
   }
 }
 
