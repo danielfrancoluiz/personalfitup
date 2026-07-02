@@ -7,10 +7,10 @@ import { getCredentials, addCredential, updateCredential } from '../../lib/fitpr
 import { calcularIdade, calcularIMC, classificarIMC } from '../../lib/fitpro-calculations';
 import { base44 } from '@/api/base44Client';
 import VerFeedbackModal from '../../components/fitpro/VerFeedbackModal';
-import { contarAlunosProfessor, podeCadastrarAluno, professorNoLimiteGratuito, professorPrecisaRenovarPlano, getPlanoEfetivo } from '../../lib/planos-professor';
+import { contarAlunosProfessor, podeCadastrarAluno, professorNoLimiteGratuito, professorPrecisaRenovarPlano } from '../../lib/planos-professor';
 import {
   alunoAtivoEfetivo, getAlunosDoProfessor, professorPodeGerenciarStatusAluno,
-  isAlunoAtivoRegistro, alunoPodeAcessarView,
+  isAlunoAtivoRegistro, getAlunosVisiveisPlanoGratuito, professorVeApenasAlunosPlanoGratuito,
 } from '../../lib/aluno-status';
 import ModalPlanosBoasVindas from '../../components/fitpro/ModalPlanosBoasVindas';
 import PARQVerRespostasModal from '../../components/fitpro/PARQVerRespostasModal';
@@ -114,8 +114,15 @@ export default function AlunosView({ roleOverride }) {
   const [form, setForm] = useState(emptyAluno);
   const [activeTab, setActiveTab] = useState('perfil');
 
+  const meuProfessor = professores.find(p => p.id === professorId);
+  const alunosDoProfessor = getAlunosDoProfessor(alunos, professorId);
+  const planoGratuitoEfetivo = role === 'professor' && professorVeApenasAlunosPlanoGratuito(meuProfessor);
+  const alunosBaseProfessor = planoGratuitoEfetivo
+    ? getAlunosVisiveisPlanoGratuito(alunosDoProfessor)
+    : alunosDoProfessor;
+
   const alunosFiltrados = role === 'professor'
-    ? alunos.filter(a => professorId && a.professorId === professorId)
+    ? (professorId ? alunosBaseProfessor : [])
     : alunos;
 
   const filtered = alunosFiltrados.filter(a => {
@@ -136,13 +143,17 @@ export default function AlunosView({ roleOverride }) {
   const [showUpgradePlano, setShowUpgradePlano] = useState(false);
   const [pendenteNovoAluno, setPendenteNovoAluno] = useState(false);
 
-  const meuProfessor = professores.find(p => p.id === professorId);
-  const alunosDoProfessor = getAlunosDoProfessor(alunos, professorId);
   const qtdMeusAlunos = contarAlunosProfessor(alunos, professorId);
+  const qtdAlunosOcultos = planoGratuitoEfetivo ? Math.max(0, alunosDoProfessor.length - alunosBaseProfessor.length) : 0;
   const noLimiteGratuito = role === 'professor' && professorNoLimiteGratuito(meuProfessor, qtdMeusAlunos);
   const planoExpirado = role === 'professor' && professorPrecisaRenovarPlano(meuProfessor);
-  const planoGratuitoEfetivo = role === 'professor' && getPlanoEfetivo(meuProfessor) === 'basico';
   const podeToggleStatus = role === 'professor' && professorPodeGerenciarStatusAluno(meuProfessor);
+
+  useEffect(() => {
+    if (!planoGratuitoEfetivo || !selectedAluno) return;
+    const idsVisiveis = new Set(alunosBaseProfessor.map(a => a.id));
+    if (!idsVisiveis.has(selectedAluno.id)) setSelectedAluno(null);
+  }, [planoGratuitoEfetivo, selectedAluno, alunosBaseProfessor]);
 
   const abrirFormNovoAluno = () => {
     if (role === 'professor' && professorId) {
@@ -395,7 +406,12 @@ export default function AlunosView({ roleOverride }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div><h2 className="text-xl font-bold text-white">{role === 'professor' ? 'Meus Alunos' : 'Alunos Cadastrados'}</h2>
-          <p className="text-xs text-slate-500">{filtered.length} aluno(s)</p></div>
+          <p className="text-xs text-slate-500">
+            {filtered.length} aluno(s)
+            {qtdAlunosOcultos > 0 && (
+              <span className="text-amber-500/80"> · {qtdAlunosOcultos} oculto(s) no plano gratuito</span>
+            )}
+          </p></div>
         {role !== 'admin' && (
           <button onClick={abrirFormNovoAluno}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
@@ -422,10 +438,19 @@ export default function AlunosView({ roleOverride }) {
           style={{ background: '#60a5fa0d', border: '1px solid #60a5fa35' }}>
           <AlertCircle size={16} color="#60a5fa" />
           <p className="text-sm text-slate-300 flex-1">
-            No plano gratuito, apenas os <span className="font-bold text-white">5 primeiros alunos cadastrados</span> permanecem ativos.
-            Novos alunos já nascem ativos, mas o acesso efetivo segue essa ordem de cadastro.
-            Ativar/desativar manualmente está disponível apenas em planos pagos.
+            No plano gratuito você vê e gerencia apenas os{' '}
+            <span className="font-bold text-white">5 primeiros alunos cadastrados</span>.
+            {qtdAlunosOcultos > 0 && (
+              <> Os outros <span className="font-bold text-white">{qtdAlunosOcultos}</span> alunos ficam ocultos até você aderir a um plano pago.</>
+            )}
           </p>
+          {qtdAlunosOcultos > 0 && (
+            <button onClick={() => { setPendenteNovoAluno(false); setShowUpgradePlano(true); }}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold flex-shrink-0"
+              style={{ background: '#60a5fa20', color: '#60a5fa', border: '1px solid #60a5fa30' }}>
+              Ver planos
+            </button>
+          )}
         </div>
       )}
 

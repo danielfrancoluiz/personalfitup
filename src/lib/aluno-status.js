@@ -22,12 +22,19 @@ export function getAlunosDoProfessor(alunos, professorId) {
   return alunos.filter(a => a.professorId === professorId);
 }
 
+/** Alunos visíveis para o professor no plano gratuito (5 primeiros cadastrados) */
+export function getAlunosVisiveisPlanoGratuito(alunosProfessor) {
+  const limite = getLimiteAlunos('basico');
+  return ordenarAlunosPorCadastro(alunosProfessor).slice(0, limite);
+}
+
+export function professorVeApenasAlunosPlanoGratuito(professor) {
+  return getPlanoEfetivo(professor) === 'basico';
+}
+
 /** IDs dos alunos que permanecem ativos no plano gratuito (5 primeiros cadastrados) */
 export function getIdsAlunosAtivosPlanoGratuito(alunosProfessor) {
-  const limite = getLimiteAlunos('basico');
-  return ordenarAlunosPorCadastro(alunosProfessor)
-    .slice(0, limite)
-    .map(a => a.id);
+  return getAlunosVisiveisPlanoGratuito(alunosProfessor).map(a => a.id);
 }
 
 export function professorPodeGerenciarStatusAluno(professor) {
