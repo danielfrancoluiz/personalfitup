@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Check, Zap, AlertCircle } from 'lucide-react';
-import { loadPlanos, isPlanoGratuito } from '../../lib/planos-professor';
+import { loadPlanos, isPlanoGratuito, dadosVigenciaPlanoPago, getPrecoPlanoAtual, limparContratoPlano } from '../../lib/planos-professor';
 import ModalCheckoutStripe from './ModalCheckoutStripe';
 
 export default function ModalPlanosBoasVindas({
@@ -17,6 +17,7 @@ export default function ModalPlanosBoasVindas({
   const planos = loadPlanos();
   const planosVisiveis = modo === 'upgrade' ? planos.filter(p => p.preco > 0) : planos;
   const [selecionado, setSelecionado] = useState(modo === 'upgrade' ? 'profissional' : 'basico');
+  const [periodoContrato, setPeriodoContrato] = useState('mensal');
   const [checkoutTransacao, setCheckoutTransacao] = useState(null);
   const [processando, setProcessando] = useState(false);
 
@@ -35,6 +36,9 @@ export default function ModalPlanosBoasVindas({
         planoCobranca: 'basico',
         planoAssinatura: 'Básico',
         statusPlano: 'ativo',
+        dataInicioPlano: new Date().toISOString().split('T')[0],
+        dataVencimento: '',
+        ...limparContratoPlano(),
       });
       onComplete?.();
       onClose();
@@ -51,10 +55,11 @@ export default function ModalPlanosBoasVindas({
       const venc = new Date();
       venc.setDate(venc.getDate() + 7);
       const nome = nomeProf || professor?.nome || 'Professor';
+      const precoContrato = getPrecoPlanoAtual(planoSel.id);
       const transacaoData = {
-        descricao: `${planoSel.nome} — ${nome}`,
+        descricao: `${planoSel.nome}${periodoContrato === 'anual' ? ' (anual)' : ''} — ${nome}`,
         tipo: 'Mensalidade',
-        valor: String(planoSel.preco),
+        valor: String(precoContrato),
         data: hoje,
         vencimento: venc.toISOString().split('T')[0],
         status: 'pendente',
@@ -86,18 +91,11 @@ export default function ModalPlanosBoasVindas({
 
   const handlePagamentoSucesso = async () => {
     if (!checkoutTransacao) return;
-    const venc = new Date();
-    venc.setMonth(venc.getMonth() + 1);
     if (updateTransacao) {
       await updateTransacao(checkoutTransacao.id, { status: 'pago' });
     }
     if (updateProfessor && professorId && planoSel) {
-      await updateProfessor(professorId, {
-        planoCobranca: planoSel.id,
-        planoAssinatura: planoSel.nome,
-        statusPlano: 'ativo',
-        dataVencimento: venc.toISOString().split('T')[0],
-      });
+      await updateProfessor(professorId, dadosVigenciaPlanoPago(planoSel.id, planoSel.nome, { periodoContrato }));
     }
     setCheckoutTransacao(null);
     onComplete?.();
@@ -194,6 +192,31 @@ export default function ModalPlanosBoasVindas({
               );
             })}
           </div>
+
+          {planoPago && (
+            <div className="px-5 pb-2 flex-shrink-0">
+              <p className="text-xs text-slate-500 mb-2">Período do contrato (preço travado até o fim):</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'mensal', label: 'Mensal', desc: 'Preço fixo por 1 mês' },
+                  { id: 'anual', label: 'Anual', desc: 'Preço fixo por 12 meses' },
+                ].map(p => (
+                  <button key={p.id} type="button" onClick={() => setPeriodoContrato(p.id)}
+                    className="p-3 rounded-xl text-left transition-all"
+                    style={{
+                      background: periodoContrato === p.id ? `${planoSel?.color || '#34d399'}15` : 'rgba(255,255,255,0.03)',
+                      border: periodoContrato === p.id ? `1px solid ${planoSel?.color || '#34d399'}50` : '1px solid rgba(255,255,255,0.07)',
+                    }}>
+                    <div className="text-sm font-bold text-white">{p.label}</div>
+                    <div className="text-[10px] text-slate-500">{p.desc}</div>
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-slate-600 mt-2 text-center">
+                Mesmo que o plano suba de preço, você paga R$ {planoSel?.preco?.toFixed(2)}/mês até o fim do contrato {periodoContrato === 'anual' ? 'de 12 meses' : 'mensal'}.
+              </p>
+            </div>
+          )}
 
           <div className="px-5 pb-5 flex-shrink-0 space-y-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16 }}>
             <button

@@ -5,6 +5,7 @@ import {
   BarChart3, Dumbbell, CalendarRange, Stethoscope, TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../../context/FitProContext';
+import { sanitizeEmailInput } from '../../lib/email-validation';
 import EsqueciSenhaModal from '../../components/fitpro/EsqueciSenhaModal';
 import BrandLogo from '../../components/fitpro/BrandLogo';
 
@@ -35,7 +36,7 @@ export default function LoginPage({ onCadastro }) {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const ok = await login(email, password);
+    const ok = await login(sanitizeEmailInput(email), password);
     if (!ok) setError('Email ou senha incorretos. Verifique suas credenciais.');
     setLoading(false);
   };

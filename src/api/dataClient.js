@@ -18,6 +18,7 @@ const ENTITY_TABLES = {
   PARQResposta: 'parq_respostas',
   SolicitacaoVinculo: 'solicitacoes_vinculo',
   ConfiguracaoStripe: 'configuracoes_stripe',
+  ConfiguracaoPlano: 'configuracoes_planos',
 };
 
 function generateId() {

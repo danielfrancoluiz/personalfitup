@@ -1,47 +1,19 @@
-import React, { useState } from 'react';
-import { UserCheck, Plus, X, Trash2, Edit2, ChevronRight, Search, Phone, Mail, CreditCard, Pencil, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { UserCheck, Plus, X, Trash2, Edit2, ChevronRight, Search, Phone, Mail, CreditCard } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/FitProContext';
 import { getCredentials, addCredential, deleteCredential } from '../../lib/fitpro-storage';
 import MaskedInput from '../../components/fitpro/MaskedInput';
+import { loadPlanos, loadPlanosAsync, PLANO_COLOR, isPlanoGratuito, dadosVigenciaPlanoPago, limparContratoPlano, getPrecoCobrancaProfessor, contratoPrecoVigente } from '../../lib/planos-professor';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 
-const PLANOS_DEFAULT = [
-  { id: 'basico', nome: 'Básico', preco: 0, desc: 'Até 5 alunos — Gratuito' },
-  { id: 'profissional', nome: 'Profissional', preco: 99.90, desc: 'Até 50 alunos, todos os recursos, periodização' },
-  { id: 'premium', nome: 'Premium', preco: 179.90, desc: 'Alunos ilimitados, financeiro, relatórios avançados' },
-  { id: 'enterprise', nome: 'Enterprise', preco: 299.90, desc: 'Multi-professor, API, suporte dedicado, white-label' },
-];
-
-function loadPlanos() {
-  try {
-    const saved = JSON.parse(localStorage.getItem('fitpro_planos'));
-    if (!saved || !Array.isArray(saved) || saved.length < 4) {
-      savePlanos(PLANOS_DEFAULT);
-      return PLANOS_DEFAULT;
-    }
-    // Garante que planos com IDs conhecidos tenham os valores corretos como base
-    const merged = PLANOS_DEFAULT.map(def => {
-      const s = saved.find(p => p.id === def.id);
-      return s ? s : def;
-    });
-    // Força o básico como gratuito sempre
-    const idx = merged.findIndex(p => p.id === 'basico');
-    if (idx >= 0) merged[idx] = { ...merged[idx], preco: 0 };
-    return merged;
-  } catch { return PLANOS_DEFAULT; }
-}
-function savePlanos(planos) {
-  localStorage.setItem('fitpro_planos', JSON.stringify(planos));
-}
-
-const PLANO_COLOR = { basico: '#60a5fa', profissional: '#34d399', premium: '#fbbf24', enterprise: '#a78bfa' };
-
 const emptyForm = {
   nome: '', email: '', telefone: '', cref: '', especialidade: '',
-  planoCobranca: 'basico', statusPlano: 'ativo', dataVencimento: '',
+  planoCobranca: 'basico', planoAssinatura: 'Básico', statusPlano: 'ativo',
+  periodoContrato: 'mensal', precoPlanoContratado: '', dataFimContrato: '',
+  dataInicioPlano: '', dataVencimento: '',
   endereco: { rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '' }
 };
 
@@ -53,10 +25,13 @@ export default function ProfessoresView() {
   const [form, setForm] = useState(emptyForm);
   const [saved, setSaved] = useState(false);
   const [selectedProf, setSelectedProf] = useState(null);
-  const [formStep, setFormStep] = useState('dados'); // 'dados' | 'plano'
+  const [formStep, setFormStep] = useState('dados');
   const [planos, setPlanos] = useState(loadPlanos);
-  const [editingPlanoId, setEditingPlanoId] = useState(null);
-  const [editingPlanoData, setEditingPlanoData] = useState({});
+  const [planoAnterior, setPlanoAnterior] = useState(null);
+
+  useEffect(() => {
+    if (showForm) loadPlanosAsync().then(setPlanos);
+  }, [showForm]);
 
   const filtered = professores.filter(p =>
     p.nome.toLowerCase().includes(search.toLowerCase()) ||
@@ -65,21 +40,43 @@ export default function ProfessoresView() {
 
   const handleSave = () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
+    let payload = { ...form };
+    const planoSel = planos.find(p => p.id === form.planoCobranca);
+    if (planoSel) payload.planoAssinatura = planoSel.nome;
+
+    const mudouPlano = editId && planoAnterior && planoAnterior !== form.planoCobranca;
+    if (!isPlanoGratuito(form.planoCobranca) && (!editId || mudouPlano)) {
+      if (form.statusPlano === 'ativo') {
+        payload = {
+          ...payload,
+          ...dadosVigenciaPlanoPago(form.planoCobranca, planoSel?.nome || '', {
+            periodoContrato: form.periodoContrato || 'mensal',
+          }),
+        };
+      } else if (!payload.dataInicioPlano) {
+        payload.dataInicioPlano = new Date().toISOString().split('T')[0];
+      }
+    }
+    if (isPlanoGratuito(form.planoCobranca)) {
+      payload = { ...payload, dataVencimento: '', ...limparContratoPlano() };
+    }
+
     if (editId) {
-      updateProfessor(editId, form);
+      updateProfessor(editId, payload);
     } else {
-      const profId = addProfessor(form);
+      const profId = addProfessor(payload);
       if (form.email && form.senha) {
         addCredential({ email: form.email, password: form.senha, role: 'professor', nome: form.nome, linkedId: profId, ativo: true, autoRegistrado: false });
       }
     }
     setSaved(true);
-    setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyForm); setFormStep('dados'); }, 1200);
+    setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyForm); setFormStep('dados'); setPlanoAnterior(null); }, 1200);
   };
 
   const openForm = (prof = null) => {
     setForm(prof ? { ...emptyForm, ...prof } : emptyForm);
     setEditId(prof?.id || null);
+    setPlanoAnterior(prof?.planoCobranca || null);
     setFormStep('dados');
     setShowForm(true);
   };
@@ -134,13 +131,28 @@ export default function ProfessoresView() {
             <div>
               <div className="text-base font-bold" style={{ color: planoColor }}>{plano.nome}</div>
               <div className="text-xs text-slate-500">{plano.desc}</div>
+              {contratoPrecoVigente(prof) && (
+                <div className="text-xs text-slate-400 mt-1">
+                  Contrato: R$ {Number(prof.precoPlanoContratado).toFixed(2)}/mês
+                  {prof.periodoContrato === 'anual' ? ' (anual)' : ' (mensal)'}
+                  {prof.dataFimContrato && ` · até ${new Date(prof.dataFimContrato + 'T12:00:00').toLocaleDateString('pt-BR')}`}
+                </div>
+              )}
             </div>
             <div className="text-right">
-              <div className="text-lg font-bold text-white">{plano.preco === 0 ? 'Grátis' : `R$ ${plano.preco.toFixed(2)}`}</div>
-                        <div className="text-xs text-slate-500">{plano.preco === 0 ? '' : '/mês'}</div>
+              <div className="text-lg font-bold text-white">
+                {getPrecoCobrancaProfessor(prof, prof.planoCobranca) === 0
+                  ? 'Grátis'
+                  : `R$ ${getPrecoCobrancaProfessor(prof, prof.planoCobranca).toFixed(2)}`}
+              </div>
+              <div className="text-xs text-slate-500">/mês cobrado</div>
+              {contratoPrecoVigente(prof) && Number(prof.precoPlanoContratado) !== plano.preco && (
+                <div className="text-[10px] text-slate-600">Tabela: R$ {plano.preco.toFixed(2)}</div>
+              )}
             </div>
           </div>
-          {prof.dataVencimento && <div className="text-xs text-slate-500 mt-2">Vencimento: {new Date(prof.dataVencimento).toLocaleDateString('pt-BR')}</div>}
+          {prof.dataInicioPlano && <div className="text-xs text-slate-500 mt-2">Adesão: {new Date(prof.dataInicioPlano + 'T12:00:00').toLocaleDateString('pt-BR')}</div>}
+          {prof.dataVencimento && <div className="text-xs text-slate-500">Próx. vencimento: {new Date(prof.dataVencimento + 'T12:00:00').toLocaleDateString('pt-BR')}</div>}
         </div>
 
         <div className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
@@ -307,89 +319,83 @@ export default function ProfessoresView() {
 
             {formStep === 'plano' && (
               <div className="space-y-3">
-                <p className="text-xs text-slate-400 mb-1">Selecione e personalize os planos de cobrança:</p>
+                <p className="text-xs text-slate-400 mb-1">
+                  Selecione o plano deste professor. Os <strong className="text-slate-300">valores são globais</strong> — altere preços em Financeiro → Planos.
+                </p>
                 <div className="space-y-2">
                   {planos.map(plano => {
                     const color = PLANO_COLOR[plano.id];
                     const selected = form.planoCobranca === plano.id;
-                    const isEditing = editingPlanoId === plano.id;
                     return (
-                      <div key={plano.id} className="rounded-xl overflow-hidden"
-                        style={{ background: selected ? `${color}12` : 'rgba(255,255,255,0.03)', border: selected ? `1px solid ${color}40` : '1px solid rgba(255,255,255,0.07)' }}>
-                        {isEditing ? (
-                          <div className="p-3 space-y-2">
-                            <div className="flex gap-2">
-                              <input value={editingPlanoData.nome} onChange={e => setEditingPlanoData(d => ({ ...d, nome: e.target.value }))}
-                                className="flex-1 px-2 py-1.5 rounded-lg text-sm text-white outline-none font-bold"
-                                style={{ background: '#1e2a3a', border: `1px solid ${color}40` }} placeholder="Nome" />
-                              <div className="relative flex items-center">
-                                <span className="absolute left-2 text-xs text-slate-400">R$</span>
-                                <input type="number" step="0.01" value={editingPlanoData.preco} onChange={e => setEditingPlanoData(d => ({ ...d, preco: parseFloat(e.target.value) || 0 }))}
-                                  className="w-24 pl-7 pr-2 py-1.5 rounded-lg text-sm text-white outline-none font-bold"
-                                  style={{ background: '#1e2a3a', border: `1px solid ${color}40` }} />
-                              </div>
-                            </div>
-                            <input value={editingPlanoData.desc} onChange={e => setEditingPlanoData(d => ({ ...d, desc: e.target.value }))}
-                              className="w-full px-2 py-1.5 rounded-lg text-xs text-slate-300 outline-none"
-                              style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} placeholder="Descrição" />
-                            <div className="flex gap-2 justify-end">
-                              <button onClick={() => setEditingPlanoId(null)}
-                                className="px-3 py-1 rounded-lg text-xs text-slate-400 hover:text-white" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                                Cancelar
-                              </button>
-                              <button onClick={() => {
-                                 const newData = { ...editingPlanoData, preco: plano.id === 'basico' ? 0 : (parseFloat(editingPlanoData.preco) || 0) };
-                                 const updated = planos.map(p => p.id === plano.id ? { ...p, ...newData } : p);
-                                 setPlanos(updated);
-                                 savePlanos(updated);
-                                 setEditingPlanoId(null);
-                               }} className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold"
-                                style={{ background: `${color}20`, color }}>
-                                <Check size={11} />Salvar
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 p-3">
-                            <div className="flex-1 cursor-pointer" onClick={() => setForm(f => ({ ...f, planoCobranca: plano.id }))}>
-                              <div className="flex items-center justify-between mb-0.5">
-                                <span className="font-bold text-sm" style={{ color: selected ? color : '#94a3b8' }}>{plano.nome}</span>
-                                <span className="font-bold text-sm" style={{ color: selected ? color : '#64748b' }}>
-                                  {plano.preco === 0 ? 'Grátis' : `R$ ${plano.preco.toFixed(2)}/mês`}
-                                </span>
-                              </div>
-                              <p className="text-xs text-slate-500">{plano.desc}</p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); setEditingPlanoId(plano.id); setEditingPlanoData({ nome: plano.nome, preco: plano.preco, desc: plano.desc }); }}
-                              className="p-1.5 rounded-lg flex-shrink-0 hover:bg-white/10 transition-all" style={{ color: '#64748b' }}>
-                              <Pencil size={12} />
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      <button key={plano.id} type="button"
+                        onClick={() => setForm(f => ({ ...f, planoCobranca: plano.id, planoAssinatura: plano.nome }))}
+                        className="w-full text-left rounded-xl p-3 transition-all"
+                        style={{
+                          background: selected ? `${color}12` : 'rgba(255,255,255,0.03)',
+                          border: selected ? `1px solid ${color}40` : '1px solid rgba(255,255,255,0.07)',
+                        }}>
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="font-bold text-sm" style={{ color: selected ? color : '#94a3b8' }}>{plano.nome}</span>
+                          <span className="font-bold text-sm" style={{ color: selected ? color : '#64748b' }}>
+                            {plano.preco === 0 ? 'Grátis' : `R$ ${Number(plano.preco).toFixed(2)}/mês`}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500">{plano.desc}</p>
+                      </button>
                     );
                   })}
                 </div>
-                <div className="grid grid-cols-2 gap-2 mt-3">
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Período do contrato</label>
+                  <select value={form.periodoContrato || 'mensal'} onChange={e => setForm(f => ({ ...f, periodoContrato: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <option value="mensal">Mensal — preço fixo por 1 mês</option>
+                    <option value="anual">Anual — preço fixo por 12 meses</option>
+                  </select>
+                  <p className="text-[10px] text-slate-600 mt-1">Ao ativar ou trocar plano, o preço da tabela é travado até o fim do período.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-xs text-slate-400 block mb-1">Status do Plano</label>
                     <select value={form.statusPlano || 'ativo'} onChange={e => setForm(f => ({ ...f, statusPlano: e.target.value }))}
                       className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
                       style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
                       <option value="ativo">Ativo</option>
+                      <option value="pendente">Pendente pagamento</option>
                       <option value="suspenso">Suspenso</option>
                       <option value="cancelado">Cancelado</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Data de Vencimento</label>
+                    <label className="text-xs text-slate-400 block mb-1">Data de Adesão</label>
+                    <input type="date" value={form.dataInicioPlano || ''} onChange={e => setForm(f => ({ ...f, dataInicioPlano: e.target.value }))}
+                      className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                      style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">Fim do contrato (preço travado)</label>
+                    <input type="date" value={form.dataFimContrato || ''} onChange={e => setForm(f => ({ ...f, dataFimContrato: e.target.value }))}
+                      className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                      style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">Próx. vencimento</label>
                     <input type="date" value={form.dataVencimento || ''} onChange={e => setForm(f => ({ ...f, dataVencimento: e.target.value }))}
                       className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
                       style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
                   </div>
                 </div>
+                {form.precoPlanoContratado !== '' && form.precoPlanoContratado != null && (
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">Preço contratado (R$/mês)</label>
+                    <input type="number" step="0.01" value={form.precoPlanoContratado} readOnly
+                      className="w-full px-3 py-2.5 rounded-xl text-sm text-slate-400 outline-none"
+                      style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                  </div>
+                )}
               </div>
             )}
 

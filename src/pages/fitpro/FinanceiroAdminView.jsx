@@ -6,6 +6,8 @@ import MaskedInput from '../../components/fitpro/MaskedInput';
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/FitProContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import ConfigPlanosGlobais from '../../components/fitpro/ConfigPlanosGlobais';
+import { loadPlanos, getPrecoCobrancaProfessor, dadosRenovacaoMensalidade, PLANO_COLOR, contratoPrecoVigente } from '../../lib/planos-professor';
 
 const PIX_DADOS_KEY = 'fitpro_admin_pix_dados';
 
@@ -121,23 +123,8 @@ function emptyCobrancaProf(profId = '') {
   };
 }
 
-const PLANOS_DEFAULT = [
-  { id: 'basico', nome: 'Básico', preco: 0 },
-  { id: 'profissional', nome: 'Profissional', preco: 99.90 },
-  { id: 'premium', nome: 'Premium', preco: 179.90 },
-  { id: 'enterprise', nome: 'Enterprise', preco: 299.90 },
-];
-
-function loadPlanos() {
-  try {
-    const saved = JSON.parse(localStorage.getItem('fitpro_planos'));
-    if (saved && Array.isArray(saved) && saved.length >= 4) return saved;
-    return PLANOS_DEFAULT;
-  } catch { return PLANOS_DEFAULT; }
-}
-
 export default function FinanceiroAdminView() {
-  const { transacoes, professores, addTransacao, updateTransacao, deleteTransacao } = useApp();
+  const { transacoes, professores, addTransacao, updateTransacao, deleteTransacao, updateProfessor } = useApp();
   const planos = loadPlanos();
 
   // Apenas transações vinculadas a professores (plano do professor, não dos alunos)
@@ -230,10 +217,11 @@ export default function FinanceiroAdminView() {
 
   const gerarCobrancaProf = (prof) => {
     const plano = planos.find(pl => pl.id === prof.planoCobranca) || planos.find(pl => pl.id === 'profissional');
+    const preco = getPrecoCobrancaProfessor(prof, prof.planoCobranca || plano?.id);
     setForm({
       ...emptyCobrancaProf(prof.id),
       descricao: `${plano?.nome || 'Mensalidade'} — ${prof.nome}`,
-      valor: plano ? String(plano.preco) : '',
+      valor: String(preco),
     });
     setShowForm(true);
   };
@@ -270,7 +258,14 @@ export default function FinanceiroAdminView() {
 
   const confirmarRecebido = async (id) => {
     setConfirmando(id);
+    const transacao = transacoesProfessores.find(t => t.id === id);
     await updateTransacao(id, { status: 'pago' });
+    if (transacao?.professorId) {
+      const prof = professores.find(p => p.id === transacao.professorId);
+      if (prof) {
+        await updateProfessor(transacao.professorId, dadosRenovacaoMensalidade(prof));
+      }
+    }
     setConfirmando(null);
   };
 
@@ -338,6 +333,7 @@ export default function FinanceiroAdminView() {
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
         {[
           { id: 'professores', label: `👨‍🏫 Professores${countsPorStatus.vencido > 0 ? ` (${countsPorStatus.vencido} vencido${countsPorStatus.vencido > 1 ? 's' : ''})` : countsPorStatus.pendente > 0 ? ` (${countsPorStatus.pendente} vence hoje)` : ''}` },
+          { id: 'planos', label: '📋 Planos' },
           { id: 'transacoes', label: '💳 Transações' },
           { id: 'pix', label: '🔳 Configurar PIX' },
           { id: 'stripe', label: '💳 Stripe' },
@@ -435,6 +431,14 @@ export default function FinanceiroAdminView() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ABA PLANOS GLOBAIS */}
+      {abaAtiva === 'planos' && (
+        <div className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+          <h3 className="font-semibold text-white mb-4">Planos da Plataforma</h3>
+          <ConfigPlanosGlobais />
         </div>
       )}
 
@@ -837,7 +841,7 @@ export default function FinanceiroAdminView() {
                     ...f,
                     professorId: e.target.value,
                     descricao: p ? `${plano?.nome || 'Mensalidade'} — ${p.nome}` : '',
-                    valor: plano ? String(plano.preco) : '',
+                    valor: plano ? String(getPrecoCobrancaProfessor(p, p.planoCobranca || plano.id)) : '',
                   }));
                 }}
                   className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
@@ -853,14 +857,23 @@ export default function FinanceiroAdminView() {
                   const p = professores.find(pr => pr.id === form.professorId);
                   const plano = p ? planos.find(pl => pl.id === p.planoCobranca) : null;
                   if (!plano) return null;
-                  const PLANO_COLOR = { basico: '#60a5fa', profissional: '#34d399', premium: '#fbbf24', enterprise: '#a78bfa' };
                   const color = PLANO_COLOR[plano.id] || '#00d4ff';
+                  const precoCobrar = getPrecoCobrancaProfessor(p, plano.id);
+                  const tabela = plano.preco;
+                  const travado = p && contratoPrecoVigente(p);
                   return (
-                    <div className="mt-1.5 flex items-center gap-2 px-3 py-2 rounded-xl"
+                    <div className="mt-1.5 px-3 py-2 rounded-xl space-y-1"
                       style={{ background: `${color}10`, border: `1px solid ${color}25` }}>
-                      <span className="text-xs font-semibold" style={{ color }}>{plano.nome}</span>
-                      <span className="text-xs text-slate-400">•</span>
-                      <span className="text-xs font-bold text-white">{plano.preco === 0 ? 'Gratuito' : `R$ ${plano.preco.toFixed(2)}/mês`}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold" style={{ color }}>{plano.nome}</span>
+                        <span className="text-xs font-bold text-white">R$ {precoCobrar.toFixed(2)}/mês</span>
+                        {travado && precoCobrar !== tabela && (
+                          <span className="text-[10px] text-slate-500">(tabela: R$ {tabela.toFixed(2)})</span>
+                        )}
+                      </div>
+                      {travado && p.dataFimContrato && (
+                        <p className="text-[10px] text-slate-500">Preço contratado até {new Date(p.dataFimContrato + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
+                      )}
                     </div>
                   );
                 })()}

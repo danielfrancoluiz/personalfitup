@@ -1,4 +1,5 @@
 import { base44 } from '@/api/base44Client';
+import { normalizeEmail } from './email-validation';
 
 // ── ID generator (mantido para compatibilidade com IDs locais de sessões/exercícios dentro de arrays) ──
 export function generateId() {
@@ -15,7 +16,8 @@ export async function saveCredentials(creds) {
 }
 
 export async function addCredential(cred) {
-  return await base44.entities.Credencial.create(cred);
+  const email = normalizeEmail(cred.email);
+  return await base44.entities.Credencial.create({ ...cred, email });
 }
 
 export async function updateCredential(id, updates) {
@@ -28,7 +30,8 @@ export async function deleteCredential(id) {
 
 export async function emailExists(email) {
   const creds = await getCredentials();
-  return creds.some(c => c.email.toLowerCase() === email.toLowerCase());
+  const norm = normalizeEmail(email);
+  return creds.some(c => normalizeEmail(c.email) === norm);
 }
 
 // ── Auth (session via sessionStorage — leve, sem localStorage) ───────────────
@@ -36,8 +39,9 @@ const SESSION_KEY = 'fitpro_session';
 
 export async function login(email, password) {
   const creds = await getCredentials();
+  const norm = normalizeEmail(email);
   const cred = creds.find(
-    c => c.email.toLowerCase() === email.toLowerCase() && c.password === password && c.ativo
+    c => normalizeEmail(c.email) === norm && c.password === password && c.ativo
   );
   if (!cred) return null;
   const user = {

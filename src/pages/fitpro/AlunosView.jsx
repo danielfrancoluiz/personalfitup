@@ -7,7 +7,7 @@ import { getCredentials, addCredential } from '../../lib/fitpro-storage';
 import { calcularIdade, calcularIMC, classificarIMC } from '../../lib/fitpro-calculations';
 import { base44 } from '@/api/base44Client';
 import VerFeedbackModal from '../../components/fitpro/VerFeedbackModal';
-import { contarAlunosProfessor, podeCadastrarAluno, professorNoLimiteGratuito } from '../../lib/planos-professor';
+import { contarAlunosProfessor, podeCadastrarAluno, professorNoLimiteGratuito, professorPrecisaRenovarPlano } from '../../lib/planos-professor';
 import ModalPlanosBoasVindas from '../../components/fitpro/ModalPlanosBoasVindas';
 import PARQVerRespostasModal from '../../components/fitpro/PARQVerRespostasModal';
 import MaskedInput from '../../components/fitpro/MaskedInput';
@@ -18,6 +18,75 @@ const inpClass = 'w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none'
 const inpStyle = { background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' };
 
 const emptyAluno = { nome: '', email: '', telefone: '', dataNascimento: '', sexo: 'M', peso: '', altura: '', objetivo: '', observacoes: '', professorId: '', endereco: { rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '' } };
+
+function ModalEditarAluno({ form, setForm, onSave, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
+      <div className="w-full max-w-lg rounded-2xl p-6 overflow-y-auto max-h-[90vh]" style={{ background: '#0d1525', border: `1px solid ${BORDER}` }}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-white">Editar Aluno</h3>
+          <button onClick={onClose}><X size={18} color="#6b7280" /></button>
+        </div>
+        <div className="space-y-3">
+          {[
+            { label: 'Nome', field: 'nome', placeholder: 'Nome completo' },
+            { label: 'Email', field: 'email', placeholder: 'email@exemplo.com' },
+          ].map(f => (
+            <div key={f.field}>
+              <label className="text-xs text-slate-400 block mb-1">{f.label}</label>
+              <input value={form[f.field] || ''} onChange={e => setForm(prev => ({ ...prev, [f.field]: e.target.value }))} placeholder={f.placeholder}
+                className={inpClass} style={inpStyle} />
+            </div>
+          ))}
+          <div>
+            <label className="text-xs text-slate-400 block mb-1">Telefone</label>
+            <MaskedInput mask="telefone" value={form.telefone || ''} onChange={e => setForm(prev => ({ ...prev, telefone: e.target.value }))}
+              placeholder="(11) 99999-9999" className={inpClass} style={inpStyle} />
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 block mb-1">Data de Nascimento</label>
+            <MaskedInput mask="data" value={form.dataNascimento || ''} onChange={e => setForm(prev => ({ ...prev, dataNascimento: e.target.value }))}
+              className={inpClass} style={inpStyle} />
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 block mb-1">Sexo</label>
+            <select value={form.sexo || 'M'} onChange={e => setForm(p => ({ ...p, sexo: e.target.value }))} className={inpClass} style={inpStyle}>
+              <option value="M">Masculino</option>
+              <option value="F">Feminino</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-xs text-slate-400 block mb-1">Peso (kg)</label>
+              <input type="number" value={form.peso} onChange={e => setForm(p => ({ ...p, peso: e.target.value }))} className={inpClass} style={inpStyle} />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 block mb-1">Altura (cm)</label>
+              <input type="number" value={form.altura} onChange={e => setForm(p => ({ ...p, altura: e.target.value }))} className={inpClass} style={inpStyle} />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 block mb-1">Objetivo</label>
+            <select value={form.objetivo || ''} onChange={e => setForm(p => ({ ...p, objetivo: e.target.value }))} className={inpClass} style={inpStyle}>
+              <option value="">Selecionar</option>
+              {['Emagrecimento', 'Hipertrofia', 'Condicionamento', 'Saúde', 'Reabilitação', 'Performance'].map(o => (
+                <option key={o} value={o}>{o}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 block mb-1">Observações</label>
+            <textarea value={form.observacoes || ''} onChange={e => setForm(p => ({ ...p, observacoes: e.target.value }))} rows={3}
+              className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none resize-none" style={inpStyle} />
+          </div>
+        </div>
+        <button onClick={onSave} className="w-full mt-4 py-3 rounded-xl font-semibold text-sm text-white" style={{ background: 'linear-gradient(135deg, #a78bfa, #7c3aed)' }}>
+          Salvar
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function AlunosView({ roleOverride }) {
   const { alunos, professores, avaliacoes, planosTreino, periodizacoes, addAluno, updateAluno, deleteAluno, updateProfessor, addTransacao, updateTransacao } = useApp();
@@ -66,6 +135,7 @@ export default function AlunosView({ roleOverride }) {
   const meuProfessor = professores.find(p => p.id === professorId);
   const qtdMeusAlunos = contarAlunosProfessor(alunos, professorId);
   const noLimiteGratuito = role === 'professor' && professorNoLimiteGratuito(meuProfessor, qtdMeusAlunos);
+  const planoExpirado = role === 'professor' && professorPrecisaRenovarPlano(meuProfessor);
 
   const abrirFormNovoAluno = () => {
     if (role === 'professor' && professorId) {
@@ -109,8 +179,10 @@ export default function AlunosView({ roleOverride }) {
       }
     }
     const data = { ...form, peso: parseFloat(form.peso) || 0, altura: parseFloat(form.altura) || 0, professorId: assignedProfessorId };
-    if (editId) { await updateAluno(editId, data); setSelectedAluno({ ...selectedAluno, ...data }); }
-    else {
+    if (editId) {
+      await updateAluno(editId, data);
+      if (selectedAluno?.id === editId) setSelectedAluno(prev => ({ ...prev, ...data }));
+    } else {
       const id = await addAluno(data);
       if (form.email && senhaNovo) {
         await addCredential({ email: form.email, password: senhaNovo, role: 'aluno', nome: form.nome, linkedId: id, ativo: true, autoRegistrado: false });
@@ -131,8 +203,15 @@ export default function AlunosView({ roleOverride }) {
   };
 
   const handleEdit = (aluno) => {
-    setForm({ ...aluno, peso: String(aluno.peso), altura: String(aluno.altura) });
-    setEditId(aluno.id); setShowForm(true);
+    setForm({ ...aluno, peso: String(aluno.peso ?? ''), altura: String(aluno.altura ?? '') });
+    setEditId(aluno.id);
+    setShowForm(true);
+  };
+
+  const fecharEdicao = () => {
+    setShowForm(false);
+    setEditId(null);
+    setForm(emptyAluno);
   };
 
   const handleDelete = async (id) => {
@@ -280,45 +359,13 @@ export default function AlunosView({ roleOverride }) {
           )}
         </div>
 
-        {showForm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-            <div className="w-full max-w-lg rounded-2xl p-6 overflow-y-auto max-h-[90vh]" style={{ background: '#0d1525', border: `1px solid ${BORDER}` }}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-white">Editar Aluno</h3>
-                <button onClick={() => { setShowForm(false); setEditId(null); }}><X size={18} color="#6b7280" /></button>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { label: 'Nome', field: 'nome', placeholder: 'Nome completo' },
-                  { label: 'Email', field: 'email', placeholder: 'email@exemplo.com' },
-                ].map(f => (
-                  <div key={f.field}>
-                    <label className="text-xs text-slate-400 block mb-1">{f.label}</label>
-                    <input value={form[f.field] || ''} onChange={e => setForm(prev => ({ ...prev, [f.field]: e.target.value }))} placeholder={f.placeholder}
-                      className={inpClass} style={inpStyle} />
-                  </div>
-                ))}
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">Telefone</label>
-                  <MaskedInput mask="telefone" value={form.telefone || ''} onChange={e => setForm(prev => ({ ...prev, telefone: e.target.value }))}
-                    placeholder="(11) 99999-9999" className={inpClass} style={inpStyle} />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div><label className="text-xs text-slate-400 block mb-1">Peso (kg)</label><input type="number" value={form.peso} onChange={e => setForm(p => ({ ...p, peso: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} /></div>
-                  <div><label className="text-xs text-slate-400 block mb-1">Altura (cm)</label><input type="number" value={form.altura} onChange={e => setForm(p => ({ ...p, altura: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} /></div>
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">Objetivo</label>
-                  <select value={form.objetivo} onChange={e => setForm(p => ({ ...p, objetivo: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <option value="">Selecionar</option>
-                    {['Emagrecimento','Hipertrofia','Condicionamento','Saúde','Reabilitação','Performance'].map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                </div>
-                <div><label className="text-xs text-slate-400 block mb-1">Observações</label><textarea value={form.observacoes} onChange={e => setForm(p => ({ ...p, observacoes: e.target.value }))} rows={3} className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none resize-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} /></div>
-              </div>
-              <button onClick={handleSave} className="w-full mt-4 py-3 rounded-xl font-semibold text-sm text-white" style={{ background: 'linear-gradient(135deg, #a78bfa, #7c3aed)' }}>Salvar</button>
-            </div>
-          </div>
+        {showForm && editId && (
+          <ModalEditarAluno
+            form={form}
+            setForm={setForm}
+            onSave={handleSave}
+            onClose={fecharEdicao}
+          />
         )}
       </div>
     );
@@ -346,6 +393,24 @@ export default function AlunosView({ roleOverride }) {
           <p className="text-sm text-slate-300 flex-1">
             <span className="font-bold text-white">{Object.values(feedbacksNaoLidos).reduce((a, b) => a + b, 0)}</span> novo(s) feedback(s) de treino não lido(s)
           </p>
+        </div>
+      )}
+
+      {/* Alerta plano expirado */}
+      {planoExpirado && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+          style={{ background: '#ef44440d', border: '1px solid #ef444435' }}>
+          <AlertCircle size={16} color="#ef4444" />
+          <p className="text-sm text-slate-300 flex-1">
+            Seu plano <span className="font-bold text-white">{meuProfessor?.planoAssinatura}</span> venceu
+            {meuProfessor?.dataVencimento ? ` em ${new Date(meuProfessor.dataVencimento + 'T12:00:00').toLocaleDateString('pt-BR')}` : ''}.
+            Renove para continuar cadastrando alunos além do limite gratuito.
+          </p>
+          <button onClick={() => { setPendenteNovoAluno(false); setShowUpgradePlano(true); }}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold flex-shrink-0"
+            style={{ background: '#ef444420', color: '#ef4444', border: '1px solid #ef444430' }}>
+            Renovar plano
+          </button>
         </div>
       )}
 
@@ -405,6 +470,7 @@ export default function AlunosView({ roleOverride }) {
               onVerPerfil={setSelectedAluno}
               onVerFeedback={setVerFeedbackAluno}
               onEnviarPARQ={handleEnviarPARQ}
+              onEdit={handleEdit}
               onDelete={id => { if (confirm('Excluir este aluno?')) handleDelete(id); }}
             />
           ))}
@@ -432,6 +498,16 @@ export default function AlunosView({ roleOverride }) {
           aluno={verPARQAluno}
           professorId={professorId}
           onClose={() => setVerPARQAluno(null)}
+        />
+      )}
+
+      {/* Modal editar aluno */}
+      {showForm && editId && (
+        <ModalEditarAluno
+          form={form}
+          setForm={setForm}
+          onSave={handleSave}
+          onClose={fecharEdicao}
         />
       )}
 

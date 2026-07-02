@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, User, Mail, Lock, Eye, EyeOff, Phone, UserCheck, Users, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { addCredential, emailExists } from '../../lib/fitpro-storage';
+import { sanitizeEmailInput, validateEmail } from '../../lib/email-validation';
 import ModalPlanosBoasVindas from '../../components/fitpro/ModalPlanosBoasVindas';
 import BrandLogo from '../../components/fitpro/BrandLogo';
 import MaskedInput from '../../components/fitpro/MaskedInput';
@@ -73,7 +74,8 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
     setErro('');
     if (step === 1) {
       if (!nome.trim()) return setErro('Nome é obrigatório');
-      if (!email.includes('@')) return setErro('Email inválido');
+      const emailCheck = validateEmail(email);
+      if (!emailCheck.ok) return setErro(emailCheck.message);
       if (tipo === 'aluno' && dataNasc && isDataFuturaIso(dataNasc)) return setErro('Data de nascimento não pode ser futura');
     }
     setStep(s => s + 1);
@@ -83,23 +85,27 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
     setErro('');
     if (password.length < 6) return setErro('Senha deve ter no mínimo 6 caracteres');
     if (password !== confirmPass) return setErro('As senhas não conferem');
-    const jaExiste = await emailExists(email);
+    const emailCheck = validateEmail(email);
+    if (!emailCheck.ok) return setErro(emailCheck.message);
+    const emailNorm = emailCheck.email;
+    const jaExiste = await emailExists(emailNorm);
     if (jaExiste) return setErro('Este email já está cadastrado');
 
     setLoading(true);
 
     if (tipo === 'aluno') {
-      const alunoId = await addAluno({ nome, email, telefone, dataNascimento: dataNasc, sexo, peso: parseFloat(peso) || 0, altura: parseFloat(altura) || 0, objetivo, observacoes: '', endereco, professorId: professorId || '' });
-      await addCredential({ email, password, role: 'aluno', nome, linkedId: alunoId, ativo: true, autoRegistrado: true });
+      const alunoId = await addAluno({ nome, email: emailNorm, telefone, dataNascimento: dataNasc, sexo, peso: parseFloat(peso) || 0, altura: parseFloat(altura) || 0, objetivo, observacoes: '', endereco, professorId: professorId || '' });
+      await addCredential({ email: emailNorm, password, role: 'aluno', nome, linkedId: alunoId, ativo: true, autoRegistrado: true });
       setDone(true);
       await new Promise(r => setTimeout(r, 1500));
-      await login(email, password);
+      await login(emailNorm, password);
     } else {
       const profId = await addProfessor({
-        nome, email, telefone, cref, especialidade, endereco,
+        nome, email: emailNorm, telefone, cref, especialidade, endereco,
         planoCobranca: 'basico', planoAssinatura: 'Básico', statusPlano: 'ativo',
+        dataInicioPlano: new Date().toISOString().split('T')[0],
       });
-      await addCredential({ email, password, role: 'professor', nome, linkedId: profId, ativo: true, autoRegistrado: true });
+      await addCredential({ email: emailNorm, password, role: 'professor', nome, linkedId: profId, ativo: true, autoRegistrado: true });
       setProfIdCriado(profId);
       setShowPlanos(true);
     }
@@ -198,7 +204,7 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
               <h3 className="font-semibold text-white mb-4">Dados Pessoais</h3>
               {[
                 { label: 'Nome Completo', value: nome, onChange: e => setNome(e.target.value), placeholder: 'Seu nome completo' },
-                { label: 'Email', value: email, onChange: e => setEmail(e.target.value), placeholder: 'seu@email.com', type: 'email' },
+                { label: 'Email', value: email, onChange: e => setEmail(sanitizeEmailInput(e.target.value)), placeholder: 'seu@email.com', type: 'email' },
               ].map(f => (
                 <div key={f.label}>
                   <label className="text-xs text-slate-400 block mb-1">{f.label}</label>
