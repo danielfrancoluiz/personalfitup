@@ -5,6 +5,7 @@ import { useApp } from '../../context/FitProContext';
 import { getCredentials, addCredential, deleteCredential } from '../../lib/fitpro-storage';
 import MaskedInput from '../../components/fitpro/MaskedInput';
 import { loadPlanos, loadPlanosAsync, PLANO_COLOR, isPlanoGratuito, dadosVigenciaPlanoPago, limparContratoPlano, getPrecoCobrancaProfessor, contratoPrecoVigente } from '../../lib/planos-professor';
+import FormField, { formInputClass, formInputStyle, formRowClass } from '../../components/fitpro/FormField';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -355,38 +356,30 @@ export default function ProfessoresView() {
                   </select>
                   <p className="text-[10px] text-slate-600 mt-1">Ao ativar ou trocar plano, o preço da tabela é travado até o fim do período.</p>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-xs text-slate-400 block mb-1">Status do Plano</label>
+                <div className={formRowClass}>
+                  <FormField label="Status do Plano">
                     <select value={form.statusPlano || 'ativo'} onChange={e => setForm(f => ({ ...f, statusPlano: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                      style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      className={formInputClass} style={formInputStyle}>
                       <option value="ativo">Ativo</option>
                       <option value="pendente">Pendente pagamento</option>
                       <option value="suspenso">Suspenso</option>
                       <option value="cancelado">Cancelado</option>
                     </select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-slate-400 block mb-1">Data de Adesão</label>
+                  </FormField>
+                  <FormField label="Data de Adesão">
                     <input type="date" value={form.dataInicioPlano || ''} onChange={e => setForm(f => ({ ...f, dataInicioPlano: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                      style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-                  </div>
+                      className={formInputClass} style={formInputStyle} />
+                  </FormField>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-xs text-slate-400 block mb-1">Fim do contrato (preço travado)</label>
+                <div className={formRowClass}>
+                  <FormField label="Fim do contrato (preço travado)">
                     <input type="date" value={form.dataFimContrato || ''} onChange={e => setForm(f => ({ ...f, dataFimContrato: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                      style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-                  </div>
-                  <div>
-                    <label className="text-xs text-slate-400 block mb-1">Próx. vencimento</label>
+                      className={formInputClass} style={formInputStyle} />
+                  </FormField>
+                  <FormField label="Próx. vencimento">
                     <input type="date" value={form.dataVencimento || ''} onChange={e => setForm(f => ({ ...f, dataVencimento: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                      style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-                  </div>
+                      className={formInputClass} style={formInputStyle} />
+                  </FormField>
                 </div>
                 {form.precoPlanoContratado !== '' && form.precoPlanoContratado != null && (
                   <div>

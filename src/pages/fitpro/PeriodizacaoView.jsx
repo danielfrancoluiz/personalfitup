@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, generateId } from '../../lib/fitpro-storage';
 import PeriodizacaoChart from '../../components/fitpro/PeriodizacaoChart';
+import FormField, { formInputClass, formInputStyle, formRow3Class } from '../../components/fitpro/FormField';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -499,28 +500,22 @@ export default function PeriodizacaoView() {
                   placeholder="Ex: Macrociclo Verão 2025" className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
                   style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">Tipo</label>
+              <div className={formRow3Class}>
+                <FormField label="Tipo">
                   <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    className={formInputClass} style={formInputStyle}>
                     {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">Duração (semanas)</label>
+                </FormField>
+                <FormField label="Duração (semanas)">
                   <input type="number" min={4} max={52} value={form.duracaoTotal}
                     onChange={e => setForm(f => ({ ...f, duracaoTotal: parseInt(e.target.value) || 12 }))}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">Data de Início</label>
+                    className={formInputClass} style={formInputStyle} />
+                </FormField>
+                <FormField label="Data de Início">
                   <input type="date" value={form.dataInicio} onChange={e => setForm(f => ({ ...f, dataInicio: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-                </div>
+                    className={formInputClass} style={formInputStyle} />
+                </FormField>
               </div>
               <div>
                 <label className="text-xs text-slate-400 block mb-1">Objetivo</label>

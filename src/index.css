@@ -26,6 +26,19 @@ body {
 
 select option { background: #1e2a3a; color: #f8fafc; }
 
+input[type="date"],
+input[type="number"],
+select {
+  min-height: 42px;
+  max-width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+input[type="date"] {
+  color-scheme: dark;
+}
+
 .brand-logo-blend {
   mix-blend-mode: screen;
 }

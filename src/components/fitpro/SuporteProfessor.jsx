@@ -80,11 +80,11 @@ export default function SuporteProfessor({ user }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="p-2 rounded-xl hover:bg-white/5 transition-colors"
-        title="Suporte"
+        className="px-2.5 py-1.5 rounded-xl text-xs font-semibold hover:bg-white/5 transition-colors"
+        style={{ color: '#34d399' }}
         aria-label="Suporte"
       >
-        <LifeBuoy size={18} color="#34d399" />
+        Suporte
       </button>
 
       {open && (

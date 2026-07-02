@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Search, Plus, ChevronRight, Activity, Dumbbell, Calendar, Phone, Mail, Trash2, Edit2, Save, X, Filter, MessageCircle, Eye, EyeOff, MessageSquare, Bell, AlertCircle } from 'lucide-react';
 import AlunoListItem from '../../components/fitpro/AlunoListItem';
 import { useApp, useAuth } from '../../context/FitProContext';
-import { getCredentials, addCredential, updateCredential } from '../../lib/fitpro-storage';
+import { getCredentials, addCredential } from '../../lib/fitpro-storage';
 import { calcularIdade, calcularIMC, classificarIMC } from '../../lib/fitpro-calculations';
 import { base44 } from '@/api/base44Client';
 import VerFeedbackModal from '../../components/fitpro/VerFeedbackModal';
@@ -241,13 +241,6 @@ export default function AlunosView({ roleOverride }) {
     if (!podeToggleStatus) return;
     const novoAtivo = !isAlunoAtivoRegistro(aluno);
     await updateAluno(aluno.id, { ativo: novoAtivo });
-    try {
-      const creds = await getCredentials();
-      const cred = creds.find(c => c.linkedId === aluno.id && c.role === 'aluno');
-      if (cred) await updateCredential(cred.id, { ativo: novoAtivo });
-    } catch {
-      /* ignora falha ao sincronizar credencial */
-    }
   };
 
   if (selectedAluno) {

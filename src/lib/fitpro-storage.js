@@ -50,9 +50,11 @@ export async function login(email, password) {
   const creds = await getCredentials();
   const norm = normalizeEmail(email);
   const cred = creds.find(
-    c => normalizeEmail(c.email) === norm && c.password === password && c.ativo
+    c => normalizeEmail(c.email) === norm && c.password === password
   );
   if (!cred) return null;
+  // Inatividade de consultoria (aluno) não bloqueia login — só restringe menus no app
+  if (cred.role !== 'aluno' && !cred.ativo) return null;
 
   const sessionToken = generateSessionToken();
   await updateCredential(cred.id, { sessionToken });
@@ -100,7 +102,9 @@ export async function validateSession() {
 
   try {
     const cred = await base44.entities.Credencial.get(user.id);
-    if (!cred.ativo || cred.sessionToken !== user.sessionToken) {
+    const sessaoInvalida = cred.sessionToken !== user.sessionToken;
+    const contaDesativada = user.role !== 'aluno' && !cred.ativo;
+    if (sessaoInvalida || contaDesativada) {
       sessionStorage.setItem(SESSION_EXPIRED_KEY, '1');
       sessionStorage.removeItem(SESSION_KEY);
       return null;

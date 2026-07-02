@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { generateId } from '../../lib/fitpro-storage';
+import FormField, { formInputClass, formInputStyle, formRowClass } from '../../components/fitpro/FormField';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -344,49 +345,41 @@ export default function ConsultoriaCorridaView() {
                   className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
                   style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">Nível</label>
+              <div className={formRowClass}>
+                <FormField label="Nível">
                   <select value={form.nivel} onChange={e => setForm(f => ({ ...f, nivel: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    className={formInputClass} style={formInputStyle}>
                     {NIVEIS.map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">Objetivo</label>
+                </FormField>
+                <FormField label="Objetivo">
                   <select value={form.objetivo} onChange={e => setForm(f => ({ ...f, objetivo: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    className={formInputClass} style={formInputStyle}>
                     {OBJETIVOS.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">Duração (semanas)</label>
+                </FormField>
+              </div>
+              <div className={formRowClass}>
+                <FormField label="Duração (semanas)">
                   <input type="number" value={form.duracaoSemanas} onChange={e => setForm(f => ({ ...f, duracaoSemanas: parseInt(e.target.value) || 1 }))}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">Data de Início</label>
+                    className={formInputClass} style={formInputStyle} />
+                </FormField>
+                <FormField label="Data de Início">
                   <input type="date" value={form.dataInicio} onChange={e => setForm(f => ({ ...f, dataInicio: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">FC Máxima (bpm)</label>
+                    className={formInputClass} style={formInputStyle} />
+                </FormField>
+              </div>
+              <div className={formRowClass}>
+                <FormField label="FC Máxima (bpm)">
                   <input type="number" value={form.fcMaxima} onChange={e => setForm(f => ({ ...f, fcMaxima: e.target.value }))}
                     placeholder="Ex: 185"
-                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">Pace Base (min/km)</label>
+                    className={formInputClass} style={formInputStyle} />
+                </FormField>
+                <FormField label="Pace Base (min/km)">
                   <input value={form.ritmoBase} onChange={e => setForm(f => ({ ...f, ritmoBase: e.target.value }))}
                     placeholder="Ex: 5:30"
-                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-                </div>
+                    className={formInputClass} style={formInputStyle} />
+                </FormField>
               </div>
               <div>
                 <label className="text-xs text-slate-400 block mb-1">Observações</label>
