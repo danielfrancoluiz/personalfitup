@@ -303,3 +303,13 @@ export function professorPrecisaRenovarPlano(professor) {
   if (isPlanoGratuito(planoId)) return false;
   return professorPlanoExpirado(professor) || professor.statusPlano !== 'ativo';
 }
+
+/** Menus bloqueados para professor no plano gratuito */
+export const PROFESSOR_VIEWS_PLANO_GRATUITO_BLOQUEADAS = new Set(['periodizacao', 'consultoria-corrida']);
+
+export const MSG_PROFESSOR_PLANO_BLOQUEADO = 'Adira a um plano pago para acessar este recurso.';
+
+export function professorPodeAcessarView(view, professor) {
+  if (!professor || getPlanoEfetivo(professor) !== 'basico') return true;
+  return !PROFESSOR_VIEWS_PLANO_GRATUITO_BLOQUEADAS.has(view);
+}

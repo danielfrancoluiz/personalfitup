@@ -33,7 +33,8 @@ import TreinoCorridaAlunoView from './fitpro/TreinoCorridaAlunoView';
 import PeriodizacaoAlunoView from './fitpro/PeriodizacaoAlunoView';
 import ConsultoriaBloqueada from '../components/fitpro/ConsultoriaBloqueada';
 import { useApp } from '../context/FitProContext';
-import { alunoAtivoEfetivo, getAlunosDoProfessor, alunoPodeAcessarView, alunoProfessorPlanoGratuito } from '../lib/aluno-status';
+import { alunoAtivoEfetivo, getAlunosDoProfessor, alunoPodeAcessarView } from '../lib/aluno-status';
+import { professorPodeAcessarView, MSG_PROFESSOR_PLANO_BLOQUEADO } from '../lib/planos-professor';
 
 const BG = '#0a0e1a';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -68,17 +69,18 @@ function AuthenticatedApp() {
   const alunoInativo = isAluno && alunoRecord
     ? !alunoAtivoEfetivo(alunoRecord, professorDoAluno, alunosDoProf)
     : false;
-  const professorGratuito = isAluno && professorDoAluno
-    ? alunoProfessorPlanoGratuito(professorDoAluno)
-    : false;
-  const alunoAcesso = { inativo: alunoInativo, professorGratuito };
+
+  const meuProfessor = isProfessor ? professores.find(p => p.id === user.linkedId) : null;
 
   const navItems = isAdmin ? adminNav : isProfessor ? professorNav : alunoNav;
   const roleColor = isAdmin ? '#00d4ff' : isProfessor ? '#34d399' : '#a78bfa';
 
   const renderView = () => {
-    if (isAluno && !alunoPodeAcessarView(activeView, alunoAcesso)) {
+    if (isAluno && alunoInativo && !alunoPodeAcessarView(activeView, true)) {
       return <ConsultoriaBloqueada />;
+    }
+    if (isProfessor && meuProfessor && !professorPodeAcessarView(activeView, meuProfessor)) {
+      return <ConsultoriaBloqueada message={MSG_PROFESSOR_PLANO_BLOQUEADO} />;
     }
 
     if (activeView === 'dashboard') {
@@ -118,7 +120,8 @@ function AuthenticatedApp() {
         onNav={setActiveView}
         sideOpen={sideOpen}
         setSideOpen={setSideOpen}
-        alunoAcesso={alunoAcesso}
+        alunoInativo={alunoInativo}
+        meuProfessor={meuProfessor}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -158,7 +161,8 @@ function AuthenticatedApp() {
           {navItems.slice(0, 5).map(item => {
             const Icon = item.icon;
             const active = activeView === item.view;
-            const disabled = isAluno && !alunoPodeAcessarView(item.view, alunoAcesso);
+            const disabled = (isAluno && alunoInativo && !alunoPodeAcessarView(item.view, true))
+              || (isProfessor && meuProfessor && !professorPodeAcessarView(item.view, meuProfessor));
             return (
               <button key={item.view} onClick={() => setActiveView(item.view)}
                 className="flex flex-col items-center gap-0.5 p-2 rounded-xl transition-all"
