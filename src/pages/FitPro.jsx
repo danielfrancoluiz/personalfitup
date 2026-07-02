@@ -163,10 +163,14 @@ function AuthenticatedApp() {
             const active = activeView === item.view;
             const disabled = (isAluno && alunoInativo && !alunoPodeAcessarView(item.view, true))
               || (isProfessor && meuProfessor && !professorPodeAcessarView(item.view, meuProfessor));
+            const itemColor = disabled ? '#94a3b8' : active ? item.color : '#9ca3af';
             return (
               <button key={item.view} onClick={() => setActiveView(item.view)}
                 className="flex flex-col items-center gap-0.5 p-2 rounded-xl transition-all"
-                style={{ color: disabled ? '#374151' : active ? item.color : '#4b5563', opacity: disabled ? 0.45 : 1 }}>
+                style={{
+                  color: itemColor,
+                  background: disabled ? 'rgba(255,255,255,0.05)' : active ? `${item.color}12` : 'transparent',
+                }}>
                 <Icon size={18} />
                 <span className="text-xs">{item.label.split(' ')[0]}</span>
               </button>

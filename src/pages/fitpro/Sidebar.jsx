@@ -86,14 +86,14 @@ function SidebarContent({ navItems, activeView, onNav, isMobile, onClose, alunoI
           const active = activeView === item.view;
           const disabled = (role === 'aluno' && alunoInativo && !alunoPodeAcessarView(item.view, true))
             || (role === 'professor' && meuProfessor && !professorPodeAcessarView(item.view, meuProfessor));
+          const itemColor = disabled ? '#94a3b8' : active ? item.color : '#9ca3af';
           return (
             <button key={item.view} onClick={() => { onNav(item.view); if (isMobile) onClose(); }}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left"
               style={{
-                background: active && !disabled ? `${item.color}15` : 'transparent',
-                color: disabled ? '#374151' : active ? item.color : '#6b7280',
-                border: `1px solid ${active && !disabled ? item.color + '25' : 'transparent'}`,
-                opacity: disabled ? 0.5 : 1,
+                background: active && !disabled ? `${item.color}18` : disabled ? 'rgba(255,255,255,0.05)' : 'transparent',
+                color: itemColor,
+                border: `1px solid ${active && !disabled ? item.color + '35' : disabled ? 'rgba(255,255,255,0.1)' : 'transparent'}`,
               }}>
               <Icon size={16} />{item.label}{active && !disabled && <ChevronRight size={12} className="ml-auto" />}
             </button>
