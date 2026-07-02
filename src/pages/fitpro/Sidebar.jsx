@@ -50,7 +50,7 @@ export const alunoNav = [
   { icon: ShoppingBag, label: 'Loja', color: '#fb923c', view: 'loja' },
 ];
 
-function SidebarContent({ navItems, activeView, onNav, isMobile, onClose, alunoInativo }) {
+function SidebarContent({ navItems, activeView, onNav, isMobile, onClose, alunoAcesso }) {
   const { user, logout } = useAuth();
   const role = user?.role;
   const roleColor = role === 'admin' ? '#00AAFF' : role === 'professor' ? '#00E87A' : '#a78bfa';
@@ -83,7 +83,7 @@ function SidebarContent({ navItems, activeView, onNav, isMobile, onClose, alunoI
         {navItems.map(item => {
           const Icon = item.icon;
           const active = activeView === item.view;
-          const disabled = alunoInativo && !alunoPodeAcessarView(item.view, true);
+          const disabled = alunoAcesso && !alunoPodeAcessarView(item.view, alunoAcesso);
           return (
             <button key={item.view} onClick={() => { onNav(item.view); if (isMobile) onClose(); }}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left"
@@ -108,12 +108,12 @@ function SidebarContent({ navItems, activeView, onNav, isMobile, onClose, alunoI
   );
 }
 
-export default function Sidebar({ navItems, activeView, onNav, sideOpen, setSideOpen, alunoInativo = false }) {
+export default function Sidebar({ navItems, activeView, onNav, sideOpen, setSideOpen, alunoAcesso = null }) {
   return (
     <>
       {/* Desktop */}
       <div className="hidden lg:flex flex-col w-64 flex-shrink-0">
-        <SidebarContent navItems={navItems} activeView={activeView} onNav={onNav} isMobile={false} onClose={() => {}} alunoInativo={alunoInativo} />
+        <SidebarContent navItems={navItems} activeView={activeView} onNav={onNav} isMobile={false} onClose={() => {}} alunoAcesso={alunoAcesso} />
       </div>
 
       {/* Mobile drawer */}
@@ -126,7 +126,7 @@ export default function Sidebar({ navItems, activeView, onNav, sideOpen, setSide
             <motion.div initial={{ x: -256 }} animate={{ x: 0 }} exit={{ x: -256 }}
               transition={{ type: 'spring', damping: 25 }}
               className="fixed left-0 top-0 bottom-0 w-64 z-50 lg:hidden">
-              <SidebarContent navItems={navItems} activeView={activeView} onNav={onNav} isMobile={true} onClose={() => setSideOpen(false)} alunoInativo={alunoInativo} />
+              <SidebarContent navItems={navItems} activeView={activeView} onNav={onNav} isMobile={true} onClose={() => setSideOpen(false)} alunoAcesso={alunoAcesso} />
             </motion.div>
           </>
         )}
