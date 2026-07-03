@@ -4,6 +4,9 @@ export const ALUNO_VIEWS_CONSULTORIA = new Set(['servicos', 'meus-pedidos', 'loj
 
 export const MSG_CONSULTORIA_BLOQUEADA = 'Contrate uma consultoria para acessar.';
 
+export const MSG_ALUNO_INATIVO_BLOQUEADO =
+  'Sua consultoria está inativa. Escolha um professor na lista abaixo para solicitar ativação ou vincular-se a outro profissional.';
+
 /** Registro explícito — padrão ativo se não definido */
 export function isAlunoAtivoRegistro(aluno) {
   return aluno?.ativo !== false;

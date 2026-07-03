@@ -34,7 +34,12 @@ import TreinoCorridaAlunoView from './fitpro/TreinoCorridaAlunoView';
 import PeriodizacaoAlunoView from './fitpro/PeriodizacaoAlunoView';
 import ConsultoriaBloqueada from '../components/fitpro/ConsultoriaBloqueada';
 import { useApp } from '../context/FitProContext';
-import { alunoAtivoEfetivo, getAlunosDoProfessor, alunoPodeAcessarView } from '../lib/aluno-status';
+import {
+  alunoAtivoEfetivo,
+  getAlunosDoProfessor,
+  alunoPodeAcessarView,
+  MSG_ALUNO_INATIVO_BLOQUEADO,
+} from '../lib/aluno-status';
 import { professorPodeAcessarView, MSG_PROFESSOR_PLANO_BLOQUEADO } from '../lib/planos-professor';
 
 const BG = '#0a0e1a';
@@ -78,7 +83,12 @@ function AuthenticatedApp() {
 
   const renderView = () => {
     if (isAluno && alunoInativo && !alunoPodeAcessarView(activeView, true)) {
-      return <ConsultoriaBloqueada />;
+      return (
+        <ConsultoriaBloqueada
+          message={MSG_ALUNO_INATIVO_BLOQUEADO}
+          showSolicitarProfessor
+        />
+      );
     }
     if (isProfessor && meuProfessor && !professorPodeAcessarView(activeView, meuProfessor)) {
       return <ConsultoriaBloqueada message={MSG_PROFESSOR_PLANO_BLOQUEADO} />;
