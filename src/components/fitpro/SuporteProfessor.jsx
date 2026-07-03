@@ -6,7 +6,7 @@ const SUPORTE_EMAIL = 'comercial@trafficclicks.com.br';
 const inpClass = 'w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none';
 const inpStyle = { background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' };
 
-function enviarViaMailto({ nome, email, assunto, mensagem }) {
+function abrirEmailSuporte({ nome, email, assunto, mensagem }) {
   const corpo = [
     `Nome: ${nome}`,
     `Email: ${email}`,
@@ -14,14 +14,13 @@ function enviarViaMailto({ nome, email, assunto, mensagem }) {
     mensagem,
   ].join('\n');
   const url = `mailto:${SUPORTE_EMAIL}?subject=${encodeURIComponent(`[Personal Fit Up] ${assunto}`)}&body=${encodeURIComponent(corpo)}`;
-  window.open(url, '_blank');
+  window.location.href = url;
 }
 
 export default function SuporteProfessor({ user }) {
   const [open, setOpen] = useState(false);
   const [assunto, setAssunto] = useState('');
   const [mensagem, setMensagem] = useState('');
-  const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
   const [enviado, setEnviado] = useState(false);
 
@@ -33,46 +32,19 @@ export default function SuporteProfessor({ user }) {
     setMensagem('');
   };
 
-  const handleEnviar = async (e) => {
+  const handleEnviar = (e) => {
     e.preventDefault();
     setErro('');
     if (!assunto.trim()) return setErro('Informe o assunto.');
     if (!mensagem.trim()) return setErro('Informe sua mensagem.');
 
-    const payload = {
+    abrirEmailSuporte({
       nome: user?.nome || 'Professor',
       email: user?.email || '',
       assunto: assunto.trim(),
       mensagem: mensagem.trim(),
-    };
-
-    setLoading(true);
-    try {
-      const res = await fetch('/api/suporte-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json().catch(() => ({}));
-
-      if (res.ok) {
-        setEnviado(true);
-        return;
-      }
-
-      if (data.fallbackMailto) {
-        enviarViaMailto(payload);
-        setEnviado(true);
-        return;
-      }
-
-      setErro(data.error || 'Não foi possível enviar. Tente novamente.');
-    } catch {
-      enviarViaMailto(payload);
-      setEnviado(true);
-    } finally {
-      setLoading(false);
-    }
+    });
+    setEnviado(true);
   };
 
   return (
@@ -107,7 +79,7 @@ export default function SuporteProfessor({ user }) {
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-sm">Suporte</h3>
-                  <p className="text-xs text-slate-500">Fale com nossa equipe comercial</p>
+                  <p className="text-xs text-slate-500">Envie um e-mail para nossa equipe</p>
                 </div>
               </div>
               <button type="button" onClick={fechar} className="p-1.5 rounded-lg hover:bg-white/5">
@@ -120,7 +92,9 @@ export default function SuporteProfessor({ user }) {
                 <div className="text-center space-y-4 py-4">
                   <CheckCircle2 size={40} color="#34d399" className="mx-auto" />
                   <p className="text-sm text-slate-300">
-                    Mensagem enviada com sucesso! Nossa equipe responderá em <strong className="text-white">{SUPORTE_EMAIL}</strong>.
+                    Seu aplicativo de e-mail foi aberto com a mensagem para{' '}
+                    <strong className="text-white">{SUPORTE_EMAIL}</strong>.
+                    Basta clicar em <strong className="text-white">Enviar</strong> no e-mail para concluir.
                   </p>
                   <button
                     type="button"
@@ -136,7 +110,8 @@ export default function SuporteProfessor({ user }) {
                   <div className="p-3 rounded-xl flex items-start gap-2" style={{ background: '#34d3990a', border: '1px solid #34d39925' }}>
                     <Mail size={14} color="#34d399" className="flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-slate-400">
-                      Sua mensagem será enviada para <span className="text-slate-300">{SUPORTE_EMAIL}</span>
+                      Ao clicar em enviar, abriremos seu e-mail (Gmail, Outlook etc.) já preenchido para{' '}
+                      <span className="text-slate-300">{SUPORTE_EMAIL}</span>. Não precisa configurar nada.
                     </p>
                   </div>
 
@@ -184,18 +159,11 @@ export default function SuporteProfessor({ user }) {
 
                   <button
                     type="submit"
-                    disabled={loading}
-                    className="w-full py-3 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-60"
+                    className="w-full py-3 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2"
                     style={{ background: 'linear-gradient(135deg, #34d399, #059669)' }}
                   >
-                    {loading ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <Send size={15} />
-                        Enviar mensagem
-                      </>
-                    )}
+                    <Send size={15} />
+                    Abrir e-mail
                   </button>
                 </form>
               )}
