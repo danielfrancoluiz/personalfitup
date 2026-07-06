@@ -87,6 +87,8 @@ function AuthenticatedApp() {
         <ConsultoriaBloqueada
           message={MSG_ALUNO_INATIVO_BLOQUEADO}
           showSolicitarProfessor
+          professorVinculado={professorDoAluno}
+          alunoRecord={alunoRecord}
         />
       );
     }
