@@ -8,6 +8,7 @@ import ModalPlanosBoasVindas from '../../components/fitpro/ModalPlanosBoasVindas
 import BrandLogo from '../../components/fitpro/BrandLogo';
 import MaskedInput from '../../components/fitpro/MaskedInput';
 import { isDataFuturaIso } from '../../lib/fitpro-masks';
+import { professorTemVagas } from '../../lib/planos-professor';
 
 const estados = [
   { uf: 'AC', nome: 'Acre' },
@@ -41,7 +42,7 @@ const estados = [
 const emptyAddr = { rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '' };
 
 export default function CadastroPage({ onBack, tipoInicial, professorIdInicial = '' }) {
-  const { professores, addAluno, addProfessor, updateProfessor, addTransacao, updateTransacao } = useApp();
+  const { professores, alunos, addAluno, addProfessor, updateProfessor, addTransacao, updateTransacao } = useApp();
   const { login } = useAuth();
 
   const [tipo, setTipo] = useState(tipoInicial || 'escolha');
@@ -67,6 +68,8 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
   const [professorId, setProfessorId] = useState(professorIdInicial);
   const [cref, setCref] = useState('');
   const [especialidade, setEspecialidade] = useState('');
+
+  const professoresComVagas = (professores || []).filter((p) => professorTemVagas(p, alunos));
 
   const setAddr = (f, v) => setEndereco(e => ({ ...e, [f]: v }));
 
@@ -281,7 +284,7 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
                   <label className="text-xs text-slate-400 block mb-1">Professor (opcional)</label>
                   <select value={professorId} onChange={e => setProfessorId(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
                     <option value="">Sem professor vinculado</option>
-                    {(professores || []).map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                    {(professoresComVagas).map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
                   </select>
                 </div>
               </>}

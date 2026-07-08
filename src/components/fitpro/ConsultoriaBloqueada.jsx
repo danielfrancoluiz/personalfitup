@@ -22,7 +22,7 @@ export default function ConsultoriaBloqueada({
           style={{ background: '#a78bfa15', border: '1px solid #a78bfa30' }}>
           <Lock size={28} color="#a78bfa" />
         </div>
-        <h2 className="text-xl font-bold text-white">Acesso restrito</h2>
+        <h2 className="text-xl font-bold text-white">Acesso limitado</h2>
         <p className="text-slate-400 text-sm max-w-md">{message || MSG_CONSULTORIA_BLOQUEADA}</p>
 
         {showSolicitarProfessor && (

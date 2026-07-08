@@ -304,6 +304,13 @@ export function professorPrecisaRenovarPlano(professor) {
   return professorPlanoExpirado(professor) || professor.statusPlano !== 'ativo';
 }
 
+/** Professor ainda pode receber novos alunos no plano atual */
+export function professorTemVagas(professor, alunos) {
+  if (!professor?.id) return false;
+  const qtd = contarAlunosProfessor(alunos, professor.id);
+  return podeCadastrarAluno(professor, qtd);
+}
+
 /** Menus bloqueados para professor no plano gratuito */
 export const PROFESSOR_VIEWS_PLANO_GRATUITO_BLOQUEADAS = new Set(['periodizacao', 'consultoria-corrida']);
 

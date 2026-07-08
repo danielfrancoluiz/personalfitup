@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, UserCheck, Send, CheckCircle2, Clock, XCircle, MapPin, Search, Filter, AlertCircle } from 'lucide-react';
+import { X, UserCheck, Send, CheckCircle2, Clock, XCircle, MapPin, Search, Filter } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import { base44 } from '@/api/base44Client';
-import { contarAlunosProfessor, podeCadastrarAluno } from '../../lib/planos-professor';
+import { professorTemVagas } from '../../lib/planos-professor';
 
 const BORDER = 'rgba(255,255,255,0.07)';
-const MSG_PLANO_LIMITADO =
-  'Aguardando aprovação do professor. Este professor está no limite do plano. Você também pode escolher outro na lista.';
 
 // Extrai prefixo numérico do CEP para estimar proximidade
 function cepPrefix(cep) {
@@ -36,7 +34,6 @@ export default function SolicitarVinculoModal({ onClose }) {
   const [filtroCidade, setFiltroCidade] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
   const [busca, setBusca] = useState('');
-  const [avisoPlanoLimitado, setAvisoPlanoLimitado] = useState('');
   const [enviadoOk, setEnviadoOk] = useState(false);
 
   useEffect(() => {
@@ -60,19 +57,24 @@ export default function SolicitarVinculoModal({ onClose }) {
   const profAtual = professores.find(p => p.id === alunoData?.professorId);
   const alunoCep = alunoData?.endereco?.cep || '';
 
-  // Listas únicas para os filtros
+  const professoresDisponiveis = useMemo(
+    () => professores.filter((p) => professorTemVagas(p, alunos)),
+    [professores, alunos]
+  );
+
+  // Listas únicas para os filtros (somente professores com vagas)
   const cidades = useMemo(() =>
-    [...new Set(professores.map(p => p.endereco?.cidade).filter(Boolean))].sort(),
-    [professores]
+    [...new Set(professoresDisponiveis.map(p => p.endereco?.cidade).filter(Boolean))].sort(),
+    [professoresDisponiveis]
   );
   const estados = useMemo(() =>
-    [...new Set(professores.map(p => p.endereco?.estado).filter(Boolean))].sort(),
-    [professores]
+    [...new Set(professoresDisponiveis.map(p => p.endereco?.estado).filter(Boolean))].sort(),
+    [professoresDisponiveis]
   );
 
   // Professores filtrados e ordenados por proximidade de CEP
   const professoresFiltrados = useMemo(() => {
-    let lista = [...professores];
+    let lista = [...professoresDisponiveis];
 
     if (filtroEstado) lista = lista.filter(p => p.endereco?.estado === filtroEstado);
     if (filtroCidade) lista = lista.filter(p => p.endereco?.cidade === filtroCidade);
@@ -91,19 +93,14 @@ export default function SolicitarVinculoModal({ onClose }) {
     });
 
     return lista;
-  }, [professores, filtroEstado, filtroCidade, busca, alunoCep]);
-
-  const profNoLimite = (prof) => {
-    if (!prof) return false;
-    const qtd = contarAlunosProfessor(alunos, prof.id);
-    return !podeCadastrarAluno(prof, qtd);
-  };
+  }, [professoresDisponiveis, filtroEstado, filtroCidade, busca, alunoCep]);
 
   const handleEnviar = async () => {
     if (!selectedProfessor) return;
     const prof = professores.find(p => p.id === selectedProfessor);
+    if (!prof || !professorTemVagas(prof, alunos)) return;
+
     setEnviando(true);
-    setAvisoPlanoLimitado('');
     setEnviadoOk(false);
 
     await base44.entities.SolicitacaoVinculo.create({
@@ -114,17 +111,10 @@ export default function SolicitarVinculoModal({ onClose }) {
       professorNome: prof?.nome || '',
       status: 'pendente',
       mensagem: mensagem.trim(),
-      planoLimitado: profNoLimite(prof),
     });
     const list = await base44.entities.SolicitacaoVinculo.filter({ alunoId: resolvedAlunoId });
     setSolicitacoes(list.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
-
-    if (profNoLimite(prof)) {
-      setAvisoPlanoLimitado(MSG_PLANO_LIMITADO);
-    } else {
-      setEnviadoOk(true);
-    }
-
+    setEnviadoOk(true);
     setSelectedProfessor('');
     setMensagem('');
     setEnviando(false);
@@ -223,7 +213,7 @@ export default function SolicitarVinculoModal({ onClose }) {
                 style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <option value="">Todas as cidades</option>
                 {(filtroEstado
-                  ? professores.filter(p => p.endereco?.estado === filtroEstado).map(p => p.endereco?.cidade).filter(Boolean)
+                  ? professoresDisponiveis.filter(p => p.endereco?.estado === filtroEstado).map(p => p.endereco?.cidade).filter(Boolean)
                   : cidades
                 ).filter((v, i, arr) => arr.indexOf(v) === i).sort().map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -247,7 +237,9 @@ export default function SolicitarVinculoModal({ onClose }) {
 
             {professoresFiltrados.length === 0 ? (
               <div className="text-center py-6 text-slate-500 text-sm">
-                Nenhum professor encontrado com esses filtros
+                {professoresDisponiveis.length === 0
+                  ? 'Nenhum professor com vagas disponíveis no momento.'
+                  : 'Nenhum professor encontrado com esses filtros'}
               </div>
             ) : (
               <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
@@ -256,13 +248,11 @@ export default function SolicitarVinculoModal({ onClose }) {
                   const temLocal = prof.endereco?.cidade || prof.endereco?.estado;
                   const dist = alunoCep ? distanciaCep(alunoCep, prof.endereco?.cep) : Infinity;
                   const muitoProximo = dist < 500;
-                  const noLimite = profNoLimite(prof);
                   return (
                     <button
                       key={prof.id}
                       onClick={() => {
                         setSelectedProfessor(selecionado ? '' : prof.id);
-                        setAvisoPlanoLimitado('');
                         setEnviadoOk(false);
                       }}
                       className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all"
@@ -281,12 +271,6 @@ export default function SolicitarVinculoModal({ onClose }) {
                             <span className="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
                               style={{ background: '#34d39915', color: '#34d399', border: '1px solid #34d39930' }}>
                               📍 Próximo
-                            </span>
-                          )}
-                          {noLimite && (
-                            <span className="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
-                              style={{ background: '#fbbf2415', color: '#fbbf24', border: '1px solid #fbbf2430' }}>
-                              Plano limitado
                             </span>
                           )}
                         </div>
@@ -313,36 +297,19 @@ export default function SolicitarVinculoModal({ onClose }) {
 
           {/* Professor selecionado — preview */}
           {profSelecionado && (
-            <div className="p-3 rounded-xl space-y-2" style={{ background: '#a78bfa10', border: '1px solid #a78bfa30' }}>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Professor selecionado</p>
-                <p className="text-sm font-bold text-white">{profSelecionado.nome}</p>
-                {profSelecionado.endereco?.cidade && (
-                  <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                    <MapPin size={10} />
-                    {[profSelecionado.endereco.cidade, profSelecionado.endereco.estado].filter(Boolean).join(', ')}
-                  </p>
-                )}
-              </div>
-              {profNoLimite(profSelecionado) && (
-                <div className="flex items-start gap-2 p-2.5 rounded-xl" style={{ background: '#fbbf2412', border: '1px solid #fbbf2430' }}>
-                  <AlertCircle size={14} color="#fbbf24" className="flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-200 leading-relaxed">
-                    Este professor está no limite do plano. Sua solicitação ficará <strong className="text-white">aguardando aprovação</strong>. Você também pode escolher outro na lista.
-                  </p>
-                </div>
+            <div className="p-3 rounded-xl" style={{ background: '#a78bfa10', border: '1px solid #a78bfa30' }}>
+              <p className="text-xs text-slate-400 mb-1">Professor selecionado</p>
+              <p className="text-sm font-bold text-white">{profSelecionado.nome}</p>
+              {profSelecionado.endereco?.cidade && (
+                <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                  <MapPin size={10} />
+                  {[profSelecionado.endereco.cidade, profSelecionado.endereco.estado].filter(Boolean).join(', ')}
+                </p>
               )}
             </div>
           )}
 
-          {avisoPlanoLimitado && (
-            <div className="flex items-start gap-2 p-3 rounded-xl" style={{ background: '#fbbf2412', border: '1px solid #fbbf2435' }}>
-              <AlertCircle size={15} color="#fbbf24" className="flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-200 leading-relaxed">{avisoPlanoLimitado}</p>
-            </div>
-          )}
-
-          {enviadoOk && !avisoPlanoLimitado && (
+          {enviadoOk && (
             <div className="flex items-start gap-2 p-3 rounded-xl" style={{ background: '#34d39912', border: '1px solid #34d39935' }}>
               <CheckCircle2 size={15} color="#34d399" className="flex-shrink-0 mt-0.5" />
               <p className="text-xs text-emerald-200 leading-relaxed">
@@ -386,9 +353,6 @@ export default function SolicitarVinculoModal({ onClose }) {
                   const cfg = statusConfig[sol.status] || statusConfig.pendente;
                   const Icon = cfg.icon;
                   const prof = professores.find(p => p.id === sol.professorId);
-                  const labelHist = sol.status === 'pendente' && (sol.planoLimitado || (prof && profNoLimite(prof)))
-                    ? 'Aguardando aprovação do professor'
-                    : cfg.label;
                   return (
                     <div key={sol.id} className="flex items-center gap-3 p-3 rounded-xl"
                       style={{ background: `${cfg.color}08`, border: `1px solid ${cfg.color}25` }}>
@@ -400,10 +364,7 @@ export default function SolicitarVinculoModal({ onClose }) {
                             <MapPin size={9} />{prof.endereco.cidade}{prof.endereco.estado ? `, ${prof.endereco.estado}` : ''}
                           </p>
                         )}
-                        <p className="text-xs" style={{ color: cfg.color }}>{labelHist}</p>
-                        {sol.status === 'pendente' && (sol.planoLimitado || (prof && profNoLimite(prof))) && (
-                          <p className="text-xs text-slate-500 mt-0.5">Ou escolha outro professor na lista</p>
-                        )}
+                        <p className="text-xs" style={{ color: cfg.color }}>{cfg.label}</p>
                       </div>
                       {sol.created_date && (
                         <p className="text-xs text-slate-600 flex-shrink-0">
