@@ -41,7 +41,7 @@ const estados = [
 const emptyAddr = { rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '' };
 
 export default function CadastroPage({ onBack, tipoInicial, professorIdInicial = '' }) {
-  const { addAluno, addProfessor, updateProfessor, addTransacao, updateTransacao } = useApp();
+  const { professores, addAluno, addProfessor, updateProfessor, addTransacao, updateTransacao } = useApp();
   const { login } = useAuth();
 
   const [tipo, setTipo] = useState(tipoInicial || 'escolha');
@@ -243,7 +243,7 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
                   <label className="text-xs text-slate-400 block mb-1">Professor (opcional)</label>
                   <select value={professorId} onChange={e => setProfessorId(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
                     <option value="">Sem professor vinculado</option>
-                    {professores.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                    {(professores || []).map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
                   </select>
                 </div>
               </>}
