@@ -139,6 +139,31 @@ export default function DashboardAluno({ onNav }) {
         )}
       </div>
 
+      {/* Sem professor vinculado */}
+      {resolvedAlunoId && !aluno?.professorId && (
+        <div className="p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center gap-3"
+          style={{ background: '#a78bfa12', border: '1px solid #a78bfa35' }}>
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <UserCheck size={18} color="#a78bfa" className="flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-white">Vincule um professor</p>
+              <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                Vincule um professor e aproveite ainda mais os benefícios do sistema.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowSolicitarVinculo(true)}
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #a78bfa, #7c3aed)', color: '#fff' }}
+          >
+            <UserCheck size={13} />
+            Escolher professor
+          </button>
+        </div>
+      )}
+
       {/* Notificação de pendência financeira */}
       {(pendenciaVencida || pendenciaPendente) && (() => {
         const cobranca = pendenciaVencida || pendenciaPendente;

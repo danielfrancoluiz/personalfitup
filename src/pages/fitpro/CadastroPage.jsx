@@ -94,12 +94,47 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
     setLoading(true);
 
     if (tipo === 'aluno') {
-      const alunoId = await addAluno({ nome, email: emailNorm, telefone, dataNascimento: dataNasc, sexo, peso: parseFloat(peso) || 0, altura: parseFloat(altura) || 0, objetivo, observacoes: '', endereco, professorId: professorId || '', ativo: true });
-      await addCredential({ email: emailNorm, password, role: 'aluno', nome, linkedId: alunoId, ativo: true, autoRegistrado: true });
-      setDone(true);
-      await new Promise(r => setTimeout(r, 1500));
-      await login(emailNorm, password);
-    } else {
+      try {
+        const alunoId = await addAluno({
+          nome,
+          email: emailNorm,
+          telefone,
+          dataNascimento: dataNasc,
+          sexo,
+          peso: parseFloat(peso) || 0,
+          altura: parseFloat(altura) || 0,
+          objetivo,
+          observacoes: '',
+          endereco,
+          professorId: professorId || '',
+          ativo: true,
+        });
+        await addCredential({
+          email: emailNorm,
+          password,
+          role: 'aluno',
+          nome,
+          linkedId: alunoId,
+          ativo: true,
+          autoRegistrado: true,
+        });
+        setDone(true);
+        const ok = await login(emailNorm, password);
+        if (!ok) {
+          setDone(false);
+          setErro('Conta criada! Faça login com seu email e senha.');
+          setTimeout(() => onBack?.(), 1800);
+        }
+      } catch (e) {
+        console.error('[Cadastro] aluno:', e);
+        setErro('Não foi possível concluir o cadastro. Tente novamente.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    try {
       const profId = await addProfessor({
         nome, email: emailNorm, telefone, cref, especialidade, endereco,
         planoCobranca: 'basico', planoAssinatura: 'Básico', statusPlano: 'ativo',
@@ -108,9 +143,12 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
       await addCredential({ email: emailNorm, password, role: 'professor', nome, linkedId: profId, ativo: true, autoRegistrado: true });
       setProfIdCriado(profId);
       setShowPlanos(true);
+    } catch (e) {
+      console.error('[Cadastro] professor:', e);
+      setErro('Não foi possível concluir o cadastro. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   if (showPlanos) return (
