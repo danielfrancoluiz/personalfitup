@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Search, Plus, ChevronRight, Activity, Dumbbell, Calendar, Phone, Mail, Trash2, Edit2, Save, X, Filter, MessageCircle, Eye, EyeOff, MessageSquare, Bell, AlertCircle } from 'lucide-react';
 import AlunoListItem from '../../components/fitpro/AlunoListItem';
@@ -14,7 +15,7 @@ import {
 } from '../../lib/aluno-status';
 import ModalPlanosBoasVindas from '../../components/fitpro/ModalPlanosBoasVindas';
 import PARQVerRespostasModal from '../../components/fitpro/PARQVerRespostasModal';
-import MaskedInput from '../../components/fitpro/MaskedInput';
+import { feedbackPertenceAoProfessor, getIdsAlunosProfessor } from '../../lib/professor-scope';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -170,15 +171,30 @@ export default function AlunosView({ roleOverride }) {
     setShowForm(true);
   };
 
-  // Carrega feedbacks não lidos ao montar
+  // Carrega feedbacks não lidos dos alunos vinculados a este professor
   useEffect(() => {
     if (role !== 'professor' && role !== 'admin') return;
-    base44.entities.FeedbackTreino.filter({ lido: false }).then(list => {
+    if (role === 'professor' && !professorId) return;
+
+    const aplicarFeedbacks = (list) => {
+      let filtrados = list;
+      if (role === 'professor') {
+        const idsMeusAlunos = getIdsAlunosProfessor(alunos, professorId);
+        filtrados = list.filter((f) => feedbackPertenceAoProfessor(f, professorId, idsMeusAlunos));
+      }
       const mapa = {};
-      list.forEach(f => { mapa[f.alunoId] = (mapa[f.alunoId] || 0) + 1; });
+      filtrados.forEach((f) => { mapa[f.alunoId] = (mapa[f.alunoId] || 0) + 1; });
       setFeedbacksNaoLidos(mapa);
-    });
-  }, [role]);
+    };
+
+    if (role === 'professor') {
+      base44.entities.FeedbackTreino.filter({ professorId, lido: false })
+        .then(aplicarFeedbacks);
+      return;
+    }
+
+    base44.entities.FeedbackTreino.filter({ lido: false }).then(aplicarFeedbacks);
+  }, [role, professorId, alunos]);
 
   const handleEnviarPARQ = (aluno) => {
     setVerPARQAluno(aluno);
@@ -566,12 +582,12 @@ export default function AlunosView({ roleOverride }) {
       )}
 
       {/* Form modal para novo aluno */}
-      {showForm && !editId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
+      {showForm && !editId && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
           <div className="w-full max-w-lg rounded-2xl p-6 overflow-y-auto max-h-[90vh]" style={{ background: '#0d1525', border: `1px solid ${BORDER}` }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-white">Novo Aluno</h3>
-              <button onClick={() => setShowForm(false)}><X size={18} color="#6b7280" /></button>
+              <button type="button" onClick={() => setShowForm(false)}><X size={18} color="#6b7280" /></button>
             </div>
             <div className="space-y-3">
               {[
@@ -591,12 +607,12 @@ export default function AlunosView({ roleOverride }) {
               </div>
               <div>
                 <label className="text-xs text-slate-400 block mb-1">Data de Nascimento</label>
-                <MaskedInput mask="data" value={form.dataNascimento} onChange={e => setForm(p => ({ ...p, dataNascimento: e.target.value }))}
+                <MaskedInput mask="data" value={form.dataNascimento || ''} onChange={e => setForm(p => ({ ...p, dataNascimento: e.target.value }))}
                   className={inpClass} style={inpStyle} />
               </div>
               <div>
                 <label className="text-xs text-slate-400 block mb-1">Sexo</label>
-                <select value={form.sexo} onChange={e => setForm(p => ({ ...p, sexo: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <select value={form.sexo || 'M'} onChange={e => setForm(p => ({ ...p, sexo: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
                   <option value="M">Masculino</option><option value="F">Feminino</option>
                 </select>
               </div>
@@ -606,7 +622,7 @@ export default function AlunosView({ roleOverride }) {
               </div>
               <div>
                 <label className="text-xs text-slate-400 block mb-1">Objetivo</label>
-                <select value={form.objetivo} onChange={e => setForm(p => ({ ...p, objetivo: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <select value={form.objetivo || ''} onChange={e => setForm(p => ({ ...p, objetivo: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
                   <option value="">Selecionar objetivo</option>
                   {['Emagrecimento','Hipertrofia','Condicionamento','Saúde','Reabilitação','Performance'].map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
@@ -641,9 +657,10 @@ export default function AlunosView({ roleOverride }) {
                 </button>
               )}
             </div>
-            <button onClick={handleSave} className="w-full mt-4 py-3 rounded-xl font-semibold text-sm text-white" style={{ background: 'linear-gradient(135deg, #a78bfa, #7c3aed)' }}>Cadastrar Aluno</button>
+            <button type="button" onClick={handleSave} className="w-full mt-4 py-3 rounded-xl font-semibold text-sm text-white" style={{ background: 'linear-gradient(135deg, #a78bfa, #7c3aed)' }}>Cadastrar Aluno</button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {showUpgradePlano && (

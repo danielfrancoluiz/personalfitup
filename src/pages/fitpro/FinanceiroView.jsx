@@ -5,7 +5,7 @@ import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import PixProfessorConfig from '../../components/fitpro/PixProfessorConfig';
-import ModalCheckoutStripe from '../../components/fitpro/ModalCheckoutStripe';
+import { filterTransacoesProfessor } from '../../lib/professor-scope';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -121,6 +121,10 @@ export default function FinanceiroView() {
     ? alunos.filter(a => professorId && a.professorId === professorId)
     : alunos;
 
+  const transacoesEscopo = user?.role === 'professor'
+    ? filterTransacoesProfessor(transacoes, professorId, alunos)
+    : (transacoes || []).filter(t => !(t.professorId && !t.alunoId));
+
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(emptyTransacao());
@@ -134,9 +138,8 @@ export default function FinanceiroView() {
   const [filtroAlunosStatus, setFiltroAlunosStatus] = useState('todos');
   const [checkoutTransacao, setCheckoutTransacao] = useState(null);
 
-  // Excluir cobranças do admin para o professor (t.professorId sem t.alunoId = cobrança de plano do admin)
-  const todasTransacoes = (transacoes || [])
-    .filter(t => !(t.professorId && !t.alunoId))
+  // Excluir cobranças do admin para o professor na visão admin
+  const todasTransacoes = transacoesEscopo
     .sort((a, b) => new Date(b.data) - new Date(a.data));
   const meses = [...new Set(todasTransacoes.map(t => t.data?.slice(0, 7)))].filter(Boolean).sort().reverse();
 

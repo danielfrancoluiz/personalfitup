@@ -48,7 +48,9 @@ export default function DashboardProfessor({ onNav }) {
     });
   }, [user?.id]);
 
-  const meusAlunos = professorId ? alunos.filter(a => a.professorId === professorId) : alunos;
+  const meusAlunos = professorId
+    ? alunos.filter(a => a.professorId === professorId)
+    : [];
 
   // Cobranças para este professor que estejam vencidas (qualquer tipo, sem alunoId)
   const cobrancasVencidas = useMemo(() => {
@@ -91,6 +93,7 @@ export default function DashboardProfessor({ onNav }) {
     { label: 'Avaliação', emoji: '📊', color: '#fb923c', desc: 'Dobras cutâneas', view: 'avaliacao' },
     { label: 'Criar Treino', emoji: '💪', color: '#f472b6', desc: 'Plano de treino', view: 'treinos' },
     { label: 'Periodização', emoji: '📅', color: '#facc15', desc: 'Linha do tempo', view: 'periodizacao' },
+    { label: 'Financeiro', emoji: '💰', color: '#00E87A', desc: 'Mensalidades', view: 'financeiro' },
     { label: 'Ver Alunos', emoji: '👥', color: '#38bdf8', desc: 'Todos os alunos', view: 'alunos' },
     { label: 'Parceiros', emoji: '🏥', color: '#4ade80', desc: 'Saúde & bem-estar', view: 'parceiros' },
   ];
@@ -223,7 +226,7 @@ export default function DashboardProfessor({ onNav }) {
       {/* Quick Actions */}
       <div className="rounded-2xl p-5" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
         <h3 className="font-semibold text-white mb-4">Ações Rápidas</h3>
-        <div className="grid grid-cols-3 lg:grid-cols-6 gap-2">
+        <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
           {quickActions.map((action, i) => (
             <button key={i} onClick={() => onNav(action.view)}
               className="flex flex-col items-center gap-1.5 p-2.5 rounded-xl transition-all hover:scale-105 cursor-pointer overflow-hidden"

@@ -39,7 +39,7 @@ export default function ProfessoresView() {
     (p.email || '').toLowerCase().includes(search.toLowerCase())
   ).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
     let payload = { ...form };
     const planoSel = planos.find(p => p.id === form.planoCobranca);
@@ -63,11 +63,19 @@ export default function ProfessoresView() {
     }
 
     if (editId) {
-      updateProfessor(editId, payload);
+      await updateProfessor(editId, payload);
     } else {
-      const profId = addProfessor(payload);
+      const profId = await addProfessor(payload);
       if (form.email && form.senha) {
-        addCredential({ email: form.email, password: form.senha, role: 'professor', nome: form.nome, linkedId: profId, ativo: true, autoRegistrado: false });
+        await addCredential({
+          email: form.email,
+          password: form.senha,
+          role: 'professor',
+          nome: form.nome,
+          linkedId: profId,
+          ativo: true,
+          autoRegistrado: false,
+        });
       }
     }
     setSaved(true);
