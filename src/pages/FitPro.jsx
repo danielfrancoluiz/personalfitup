@@ -104,7 +104,7 @@ function AuthenticatedApp() {
     if (activeView === 'alunos') return <AlunosView roleOverride={user.role} />;
     if (activeView === 'avaliacao') return <AvaliacaoFisicaView />;
     if (activeView === 'treinos') return <TreinosView onNav={setActiveView} />;
-    if (activeView === 'especialistas' || activeView === 'parceiros' || activeView === 'servicos') return <EspecialistasView />;
+    if (activeView === 'especialistas' || activeView === 'parceiros' || activeView === 'servicos') return <EspecialistasView activeView={activeView} />;
     if (activeView === 'usuarios') return <GerenciarUsuariosView />;
     if (activeView === 'avaliacoes') return <MinhasAvaliacoesView />;
     if (activeView === 'evolucao') return <EvolucaoAlunoView />;

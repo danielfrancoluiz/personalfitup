@@ -4,6 +4,7 @@ import { useApp, useAuth } from '../../context/FitProContext';
 import ModalPagamentoParceiro from '../../components/fitpro/ModalPagamentoParceiro';
 import MaskedInput from '../../components/fitpro/MaskedInput';
 import { base44 } from '@/api/base44Client';
+import { textoServicoEspecialista } from '../../lib/especialista-texto';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -19,10 +20,11 @@ const emptyEsp = {
 const ESPECIALIDADES = ['Médico', 'Nutricionista', 'Fisioterapeuta', 'Psicólogo', 'Cardiologista', 'Ortopedista', 'Professor de Educação Física', 'Personal Trainer'];
 const EMOJIS = { Médico: '👨‍⚕️', Nutricionista: '🥗', Fisioterapeuta: '🏥', Psicólogo: '🧠', Cardiologista: '❤️', Ortopedista: '🦴', 'Professor de Educação Física': '💪', 'Personal Trainer': '🏋️' };
 
-export default function EspecialistasView() {
+export default function EspecialistasView({ activeView = 'especialistas' }) {
   const { especialistas, addEspecialista, updateEspecialista, deleteEspecialista, alunos, professores } = useApp();
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const { user, isAdmin, isProfessor, isAluno } = useAuth();
+  const isConsumidor = isProfessor || isAluno;
+  const tituloPagina = isAdmin ? 'Especialistas' : activeView === 'servicos' ? 'Serviços Parceiros' : 'Parceiros';
 
   // Resolve o perfil real do usuário logado (aluno ou professor)
   const usuarioPerfil = alunos.find(a => a.email?.toLowerCase() === user?.email?.toLowerCase())
@@ -47,10 +49,11 @@ export default function EspecialistasView() {
     setUploadingImg(false);
   };
 
-  const especialidadesUnicas = [...new Set(especialistas.map(e => e.especialidade))];
-  const filtrados = filtro === 'todos' ? especialistas
-    : filtro === 'parceiros' ? especialistas.filter(e => e.parceiro)
-    : especialistas.filter(e => e.especialidade === filtro);
+  const listaBase = isConsumidor ? especialistas.filter(e => e.parceiro) : especialistas;
+  const especialidadesUnicas = [...new Set(listaBase.map(e => e.especialidade))];
+  const filtrados = filtro === 'todos' ? listaBase
+    : filtro === 'parceiros' ? listaBase.filter(e => e.parceiro)
+    : listaBase.filter(e => e.especialidade === filtro);
 
   const handleSave = () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
@@ -69,8 +72,8 @@ export default function EspecialistasView() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white">Especialistas</h2>
-          <p className="text-xs text-slate-500">{especialistas.length} especialista(s)</p>
+          <h2 className="text-xl font-bold text-white">{tituloPagina}</h2>
+          <p className="text-xs text-slate-500">{listaBase.length} especialista(s)</p>
         </div>
         {isAdmin && (
           <button onClick={() => { setForm(emptyEsp); setEditId(null); setShowForm(true); }}
@@ -82,7 +85,7 @@ export default function EspecialistasView() {
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {['todos', 'parceiros', ...especialidadesUnicas].map(f => (
+        {(isConsumidor ? ['todos', ...especialidadesUnicas] : ['todos', 'parceiros', ...especialidadesUnicas]).map(f => (
           <button key={f} onClick={() => setFiltro(f)}
             className="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all"
             style={{ background: filtro === f ? '#60a5fa20' : 'rgba(255,255,255,0.03)', color: filtro === f ? '#60a5fa' : '#64748b', border: filtro === f ? '1px solid #60a5fa30' : '1px solid rgba(255,255,255,0.06)' }}>
@@ -92,7 +95,9 @@ export default function EspecialistasView() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filtrados.map((esp) => (
+        {filtrados.map((esp) => {
+          const textoServico = textoServicoEspecialista(esp, { incluirObsComerciais: isConsumidor });
+          return (
           <div key={esp.id} className="p-5 rounded-2xl transition-all"
             style={{ background: CARD, border: `1px solid ${esp.parceiro ? '#34d39930' : BORDER}` }}>
             <div className="flex items-start justify-between mb-3">
@@ -111,14 +116,14 @@ export default function EspecialistasView() {
               {esp.parceiro && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#34d39915', color: '#34d399', border: '1px solid #34d39925' }}>Parceiro</span>}
             </div>
 
-            {esp.descricao && (
+            {textoServico && (
               <button
                 type="button"
                 onClick={() => setEspModal({ esp, foco: 'descricao' })}
                 className="text-xs text-slate-400 mb-3 line-clamp-2 text-left w-full hover:text-slate-200 transition-colors cursor-pointer"
                 title="Ver descrição completa"
               >
-                {esp.descricao}
+                {textoServico}
               </button>
             )}
 
@@ -141,7 +146,7 @@ export default function EspecialistasView() {
             {esp.disponibilidade && <p className="text-xs text-slate-500 mb-3">{esp.disponibilidade}</p>}
 
             <div className="flex gap-2 justify-end items-center">
-              {esp.parceiro && !isAdmin && (
+              {isConsumidor && (
                 <button onClick={() => setEspModal({ esp, foco: 'pagamento' })}
                   className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
                   style={{ background: 'linear-gradient(135deg, #34d399, #059669)', color: '#fff' }}>
@@ -163,7 +168,7 @@ export default function EspecialistasView() {
               )}
             </div>
           </div>
-        ))}
+        );})}
       </div>
 
       {filtrados.length === 0 && (
@@ -174,7 +179,8 @@ export default function EspecialistasView() {
         <ModalPagamentoParceiro
           especialista={espModal.esp}
           focoInicial={espModal.foco}
-          podeContratar={espModal.esp.parceiro && !isAdmin}
+          podeContratar={isConsumidor}
+          incluirObsComerciais={isConsumidor}
           usuario={usuarioPerfil}
           tipoUsuario={tipoUsuario}
           onClose={() => setEspModal(null)}

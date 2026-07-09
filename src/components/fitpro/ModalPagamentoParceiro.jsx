@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { X, Lock, CheckCircle2 } from 'lucide-react';
 import { generateId } from '../../lib/fitpro-storage';
+import { textoServicoEspecialista } from '../../lib/especialista-texto';
 import ModalCheckoutStripe from './ModalCheckoutStripe';
 
 const EMOJIS = { Médico: '👨‍⚕️', Nutricionista: '🥗', Fisioterapeuta: '🏥', Psicólogo: '🧠', Cardiologista: '❤️', Ortopedista: '🦴', 'Professor de Educação Física': '💪', 'Personal Trainer': '🏋️' };
@@ -12,6 +13,7 @@ export default function ModalPagamentoParceiro({
   tipoUsuario = 'aluno',
   focoInicial = 'pagamento',
   podeContratar = true,
+  incluirObsComerciais = false,
   onClose,
   onSuccess,
 }) {
@@ -76,6 +78,7 @@ export default function ModalPagamentoParceiro({
   }
 
   const titulo = etapa === 'detalhes' ? 'Sobre o serviço' : 'Pagamento Seguro via Stripe';
+  const textoServico = textoServicoEspecialista(especialista, { incluirObsComerciais });
 
   return (
     <>
@@ -129,10 +132,10 @@ export default function ModalPagamentoParceiro({
             </div>
 
             {/* Descrição completa */}
-            {especialista.descricao && (
+            {textoServico && (
               <div className="px-5 py-4" style={{ borderBottom: etapa === 'pagamento' ? `1px solid ${BORDER}` : 'none' }}>
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Descrição do serviço</p>
-                <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{especialista.descricao}</p>
+                <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{textoServico}</p>
               </div>
             )}
 
