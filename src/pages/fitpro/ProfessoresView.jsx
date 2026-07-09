@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { UserCheck, Plus, X, Trash2, Edit2, ChevronRight, Search, Phone, Mail, CreditCard } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { UserCheck, Plus, X, Edit2, ChevronRight, Search, Phone, Mail, CreditCard } from 'lucide-react';
 import { useApp } from '../../context/FitProContext';
+import ProfessorListItem from '../../components/fitpro/ProfessorListItem';
 import { getCredentials, addCredential, deleteCredential } from '../../lib/fitpro-storage';
 import MaskedInput from '../../components/fitpro/MaskedInput';
 import { loadPlanos, loadPlanosAsync, PLANO_COLOR, isPlanoGratuito, dadosVigenciaPlanoPago, limparContratoPlano, getPrecoCobrancaProfessor, contratoPrecoVigente } from '../../lib/planos-professor';
@@ -21,6 +21,8 @@ const emptyForm = {
 export default function ProfessoresView() {
   const { professores, alunos, avaliacoes, planosTreino, addProfessor, updateProfessor, deleteProfessor } = useApp();
   const [search, setSearch] = useState('');
+  const [filtroPlano, setFiltroPlano] = useState('');
+  const [filtroEspecialidade, setFiltroEspecialidade] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -34,10 +36,15 @@ export default function ProfessoresView() {
     if (showForm) loadPlanosAsync().then(setPlanos);
   }, [showForm]);
 
-  const filtered = professores.filter(p =>
-    p.nome.toLowerCase().includes(search.toLowerCase()) ||
-    (p.email || '').toLowerCase().includes(search.toLowerCase())
-  ).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  const filtered = professores.filter(p => {
+    const matchSearch = p.nome.toLowerCase().includes(search.toLowerCase())
+      || (p.email || '').toLowerCase().includes(search.toLowerCase());
+    const matchPlano = !filtroPlano || p.planoCobranca === filtroPlano;
+    const matchEsp = !filtroEspecialidade || p.especialidade === filtroEspecialidade;
+    return matchSearch && matchPlano && matchEsp;
+  }).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+
+  const especialidades = [...new Set(professores.map(p => p.especialidade).filter(Boolean))];
 
   const handleSave = async () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
@@ -194,7 +201,7 @@ export default function ProfessoresView() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2"><UserCheck size={20} color="#34d399" />Professores</h2>
+          <h2 className="text-xl font-bold text-white">Professores Cadastrados</h2>
           <p className="text-xs text-slate-500">{filtered.length} professor(es)</p>
         </div>
         <button onClick={() => openForm()}
@@ -204,59 +211,59 @@ export default function ProfessoresView() {
         </button>
       </div>
 
-      <div className="relative">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar professor..."
-          className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white outline-none"
-          style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+      <div className="flex gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-48">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nome ou email..."
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white outline-none"
+            style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+        </div>
+        {planos.length > 0 && (
+          <select value={filtroPlano} onChange={e => setFiltroPlano(e.target.value)}
+            className="px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+            style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <option value="">Todos os planos</option>
+            {planos.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+          </select>
+        )}
+        {especialidades.length > 0 && (
+          <select value={filtroEspecialidade} onChange={e => setFiltroEspecialidade(e.target.value)}
+            className="px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+            style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <option value="">Todas especialidades</option>
+            {especialidades.map(e => <option key={e} value={e}>{e}</option>)}
+          </select>
+        )}
       </div>
 
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-500"><UserCheck size={40} className="mx-auto mb-3 opacity-30" /><p>Nenhum professor cadastrado</p></div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-2">
           {filtered.map((prof, i) => {
             const meusAlunos = alunos.filter(a => a.professorId === prof.id);
-            const colors = ['#34d399','#60a5fa','#a78bfa','#fb923c','#f472b6'];
-            const color = colors[i % 5];
+            const avsTotal = avaliacoes.filter(av => meusAlunos.some(a => a.id === av.alunoId)).length;
+            const treinosTotal = planosTreino.filter(t => meusAlunos.some(a => a.id === t.alunoId)).length;
             const plano = planos.find(p => p.id === prof.planoCobranca) || planos.find(p => p.id === 'basico') || planos[0];
             const planoColor = PLANO_COLOR[prof.planoCobranca] || PLANO_COLOR[plano?.id] || '#60a5fa';
+            const preco = getPrecoCobrancaProfessor(prof, prof.planoCobranca);
+            const precoLabel = preco === 0 ? 'Grátis' : `R$ ${preco.toFixed(2)}/mês`;
+
             return (
-              <motion.div key={prof.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="p-5 rounded-2xl cursor-pointer hover:opacity-90 transition-all"
-                style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black text-white"
-                    style={{ background: `${color}25` }}>{prof.nome.charAt(0)}</div>
-                  <div className="flex-1">
-                    <div className="font-bold text-white">{prof.nome}</div>
-                    <div className="text-xs text-slate-400">{prof.especialidade} {prof.cref ? `• ${prof.cref}` : ''}</div>
-                  </div>
-                  <span className="text-xs px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: `${planoColor}15`, color: planoColor, border: `1px solid ${planoColor}25` }}>{plano.nome}</span>
-                </div>
-                <div className="flex gap-3 mb-3">
-                  <div className="flex-1 p-2 rounded-xl text-center" style={{ background: `${color}08`, border: `1px solid ${color}20` }}>
-                    <div className="text-lg font-bold" style={{ color }}>{meusAlunos.length}</div>
-                    <div className="text-xs text-slate-500">Alunos</div>
-                  </div>
-                  <div className="flex-1 p-2 rounded-xl text-center" style={{ background: `${planoColor}08`, border: `1px solid ${planoColor}20` }}>
-                    <div className="text-sm font-bold" style={{ color: planoColor }}>{plano.preco === 0 ? 'Grátis' : `R$${plano.preco.toFixed(0)}`}</div>
-                    <div className="text-xs text-slate-500">{plano.preco === 0 ? '' : '/mês'}</div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setSelectedProf(prof)} className="flex-1 py-2 rounded-xl text-xs font-semibold"
-                    style={{ background: `${color}15`, color, border: `1px solid ${color}25` }}>Ver Perfil</button>
-                  <button onClick={(e) => { e.stopPropagation(); openForm(prof); }}
-                    className="px-3 py-2 rounded-xl text-xs hover:bg-white/5 transition-all" style={{ color: '#fbbf24' }}>
-                    <Edit2 size={14} />
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); if (confirm('Excluir este professor?')) deleteProfessor(prof.id); }}
-                    className="px-3 py-2 rounded-xl text-xs hover:bg-red-500/10" style={{ color: '#ef4444' }}>
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </motion.div>
+              <ProfessorListItem
+                key={prof.id}
+                professor={prof}
+                i={i}
+                alunosCount={meusAlunos.length}
+                avaliacoesCount={avsTotal}
+                treinosCount={treinosTotal}
+                plano={plano}
+                planoColor={planoColor}
+                precoLabel={precoLabel}
+                onVerPerfil={setSelectedProf}
+                onEdit={openForm}
+                onDelete={(id) => { if (confirm('Excluir este professor?')) deleteProfessor(id); }}
+              />
             );
           })}
         </div>
