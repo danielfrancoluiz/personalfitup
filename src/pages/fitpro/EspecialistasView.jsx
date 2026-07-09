@@ -34,7 +34,7 @@ export default function EspecialistasView() {
   const [form, setForm] = useState(emptyEsp);
   const [filtro, setFiltro] = useState('todos');
   const [saved, setSaved] = useState(false);
-  const [espPagamento, setEspPagamento] = useState(null);
+  const [espModal, setEspModal] = useState(null);
   const [uploadingImg, setUploadingImg] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -111,7 +111,16 @@ export default function EspecialistasView() {
               {esp.parceiro && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#34d39915', color: '#34d399', border: '1px solid #34d39925' }}>Parceiro</span>}
             </div>
 
-            {esp.descricao && <p className="text-xs text-slate-400 mb-3 line-clamp-2">{esp.descricao}</p>}
+            {esp.descricao && (
+              <button
+                type="button"
+                onClick={() => setEspModal({ esp, foco: 'descricao' })}
+                className="text-xs text-slate-400 mb-3 line-clamp-2 text-left w-full hover:text-slate-200 transition-colors cursor-pointer"
+                title="Ver descrição completa"
+              >
+                {esp.descricao}
+              </button>
+            )}
 
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1">
@@ -133,7 +142,7 @@ export default function EspecialistasView() {
 
             <div className="flex gap-2 justify-end items-center">
               {esp.parceiro && !isAdmin && (
-                <button onClick={() => setEspPagamento(esp)}
+                <button onClick={() => setEspModal({ esp, foco: 'pagamento' })}
                   className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
                   style={{ background: 'linear-gradient(135deg, #34d399, #059669)', color: '#fff' }}>
                   <ShoppingCart size={14} />Contratar
@@ -161,13 +170,15 @@ export default function EspecialistasView() {
         <div className="text-center py-16 text-slate-500"><Stethoscope size={40} className="mx-auto mb-3 opacity-30" /><p>Nenhum especialista encontrado</p></div>
       )}
 
-      {espPagamento && (
+      {espModal && (
         <ModalPagamentoParceiro
-          especialista={espPagamento}
+          especialista={espModal.esp}
+          focoInicial={espModal.foco}
+          podeContratar={espModal.esp.parceiro && !isAdmin}
           usuario={usuarioPerfil}
           tipoUsuario={tipoUsuario}
-          onClose={() => setEspPagamento(null)}
-          onSuccess={() => { setTimeout(() => setEspPagamento(null), 3000); }}
+          onClose={() => setEspModal(null)}
+          onSuccess={() => { setTimeout(() => setEspModal(null), 3000); }}
         />
       )}
 
