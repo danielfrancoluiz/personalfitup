@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MessageCircle, Mail, CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 const WHATSAPP_NUMERO = '5563999836349';
-const EMAIL_CONTATO = 'dione2010@gmail.com';
+const EMAIL_CONTATO = 'Comercial@trafficclicks.com.br';
 
 const inpClass = 'w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none';
 const inpStyle = { background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' };
