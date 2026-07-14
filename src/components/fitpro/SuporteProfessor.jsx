@@ -92,8 +92,7 @@ export default function SuporteProfessor({ user }) {
                 <div className="text-center space-y-4 py-4">
                   <CheckCircle2 size={40} color="#34d399" className="mx-auto" />
                   <p className="text-sm text-slate-300">
-                    Seu aplicativo de e-mail foi aberto com a mensagem para{' '}
-                    <strong className="text-white">{SUPORTE_EMAIL}</strong>.
+                    Seu aplicativo de e-mail foi aberto com a mensagem pronta.
                     Basta clicar em <strong className="text-white">Enviar</strong> no e-mail para concluir.
                   </p>
                   <button
@@ -110,8 +109,7 @@ export default function SuporteProfessor({ user }) {
                   <div className="p-3 rounded-xl flex items-start gap-2" style={{ background: '#34d3990a', border: '1px solid #34d39925' }}>
                     <Mail size={14} color="#34d399" className="flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-slate-400">
-                      Ao clicar em enviar, abriremos seu e-mail (Gmail, Outlook etc.) já preenchido para{' '}
-                      <span className="text-slate-300">{SUPORTE_EMAIL}</span>. Não precisa configurar nada.
+                      Ao clicar em enviar, abriremos seu e-mail (Gmail, Outlook etc.) já preenchido. Basta enviar a mensagem.
                     </p>
                   </div>
 

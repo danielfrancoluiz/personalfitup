@@ -82,7 +82,7 @@ export default function ContatoPublicoModal({ onClose }) {
             <p className="text-xs text-slate-400 leading-relaxed">
               {enviado === 'whatsapp'
                 ? 'Se o WhatsApp não abriu, verifique se o app está instalado ou tente novamente.'
-                : 'Se o app de e-mail não abriu, envie para dione2010@gmail.com.'}
+                : 'Se o app de e-mail não abriu, tente novamente ou use outro dispositivo.'}
             </p>
             <button
               type="button"
@@ -142,10 +142,6 @@ export default function ContatoPublicoModal({ onClose }) {
               <Mail size={16} />
               Enviar por e-mail
             </button>
-
-            <p className="text-[11px] text-center text-slate-600 leading-relaxed">
-              WhatsApp: (63) 99983-6349 · E-mail: {EMAIL_CONTATO}
-            </p>
           </div>
         )}
       </div>
