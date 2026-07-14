@@ -29,6 +29,7 @@ export default function ModalPagamentoParceiro({
     const novo = {
       id: pedidoId,
       solicitanteId: usuario?.id || '',
+      solicitanteEmail: usuario?.email || '',
       tipoSolicitante: tipoUsuario,
       especialistaId: especialista.id,
       dataAgendamento: new Date().toISOString().split('T')[0],

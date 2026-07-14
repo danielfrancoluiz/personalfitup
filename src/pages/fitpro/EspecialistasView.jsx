@@ -5,6 +5,7 @@ import ModalPagamentoParceiro from '../../components/fitpro/ModalPagamentoParcei
 import MaskedInput from '../../components/fitpro/MaskedInput';
 import { base44 } from '@/api/base44Client';
 import { textoServicoEspecialista } from '../../lib/especialista-texto';
+import { resolveSolicitantePerfil } from '../../lib/resolve-solicitante';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -26,10 +27,7 @@ export default function EspecialistasView({ activeView = 'especialistas' }) {
   const isConsumidor = isProfessor || isAluno;
   const tituloPagina = isAdmin ? 'Especialistas' : activeView === 'servicos' ? 'Serviços Parceiros' : 'Parceiros';
 
-  // Resolve o perfil real do usuário logado (aluno ou professor)
-  const usuarioPerfil = alunos.find(a => a.email?.toLowerCase() === user?.email?.toLowerCase())
-    || professores.find(p => p.email?.toLowerCase() === user?.email?.toLowerCase());
-  const tipoUsuario = alunos.some(a => a.email?.toLowerCase() === user?.email?.toLowerCase()) ? 'aluno' : 'professor';
+  const { perfil: usuarioPerfil, tipo: tipoUsuario } = resolveSolicitantePerfil(user, alunos, professores);
 
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);

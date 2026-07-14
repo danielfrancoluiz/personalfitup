@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ClipboardList, CheckCircle2, Clock, XCircle, ChevronDown, ChevronUp, Stethoscope } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
-import { getCredentials } from '../../lib/fitpro-storage';
+import { resolveSolicitantePerfil } from '../../lib/resolve-solicitante';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -19,40 +18,40 @@ const EMOJIS = {
   Cardiologista: '❤️', Ortopedista: '🦴', 'Professor de Educação Física': '💪', 'Personal Trainer': '🏋️',
 };
 
-const METODO_LABEL = { pix: 'PIX', credito: 'Cartão de Crédito', debito: 'Cartão de Débito' };
+const METODO_LABEL = { pix: 'PIX', credito: 'Cartão de Crédito', debito: 'Cartão de Débito', stripe: 'Cartão via Stripe' };
+
+function carregarPedidos() {
+  try { return JSON.parse(localStorage.getItem('fitpro_pedidos_especialistas') || '[]'); }
+  catch { return []; }
+}
 
 export default function MeusPedidosView() {
-  const { especialistas, alunos, professores } = useApp();
+  const { especialistas, alunos, professores, loading } = useApp();
   const { user } = useAuth();
   const [expandedId, setExpandedId] = useState(null);
   const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [pedidos] = useState(carregarPedidos);
 
-  const [linkedId, setLinkedId] = useState('');
-  useEffect(() => {
-    getCredentials().then(creds => {
-      const myCred = creds.find(c => c.id === user?.id);
-      setLinkedId(myCred?.linkedId || '');
-    });
-  }, [user?.id]);
-
-  const alunoAtual = alunos.find(a =>
-    a.id === linkedId || a.email?.toLowerCase() === user?.email?.toLowerCase()
-  );
-  const professorAtual = professores.find(p =>
-    p.id === linkedId || p.email?.toLowerCase() === user?.email?.toLowerCase()
+  const { perfil, ids: idsSolicitante } = useMemo(
+    () => resolveSolicitantePerfil(user, alunos, professores),
+    [user, alunos, professores],
   );
 
-  const perfilId = alunoAtual?.id || professorAtual?.id || '';
+  const emailNorm = (user?.email || '').trim().toLowerCase();
 
-  // Carrega pedidos de agendamentos do localStorage
-  const todosPedidos = (() => {
-    try { return JSON.parse(localStorage.getItem('fitpro_pedidos_especialistas') || '[]'); } catch { return []; }
-  })();
+  // Não filtrar com id vazio — isso fazia pedidos órfãos aparecerem e sumirem
+  const perfilPronto = !loading && idsSolicitante.length > 0;
 
-  // Filtra apenas os pedidos do usuário logado
-  const meusPedidos = todosPedidos
-    .filter(p => p.solicitanteId === perfilId)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const meusPedidos = useMemo(() => {
+    if (!perfilPronto) return [];
+    return pedidos
+      .filter((p) => {
+        if (idsSolicitante.includes(p.solicitanteId)) return true;
+        if (emailNorm && (p.solicitanteEmail || '').trim().toLowerCase() === emailNorm) return true;
+        return false;
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }, [pedidos, perfilPronto, idsSolicitante, emailNorm]);
 
   const filtrados = filtroStatus === 'todos'
     ? meusPedidos
@@ -64,7 +63,6 @@ export default function MeusPedidosView() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div>
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <ClipboardList size={20} color="#60a5fa" />Meus Pedidos
@@ -72,7 +70,6 @@ export default function MeusPedidosView() {
         <p className="text-xs text-slate-500">Agendamentos de serviços de especialistas parceiros</p>
       </div>
 
-      {/* KPIs */}
       <div className="grid grid-cols-3 gap-3">
         {[
           { label: 'Total', value: meusPedidos.length, color: '#60a5fa' },
@@ -86,12 +83,11 @@ export default function MeusPedidosView() {
         ))}
       </div>
 
-      {/* Filtro de status */}
       <div className="flex gap-2 flex-wrap">
         {['todos', ...Object.keys(STATUS)].map(s => {
           const color = s === 'todos' ? '#64748b' : STATUS[s].color;
           return (
-            <button key={s} onClick={() => setFiltroStatus(s)}
+            <button key={s} type="button" onClick={() => setFiltroStatus(s)}
               className="px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
               style={{
                 background: filtroStatus === s ? `${color}20` : 'rgba(255,255,255,0.03)',
@@ -104,12 +100,18 @@ export default function MeusPedidosView() {
         })}
       </div>
 
-      {/* Lista */}
-      {filtrados.length === 0 ? (
+      {!perfilPronto ? (
+        <div className="text-center py-16 text-slate-500">
+          <p className="text-sm">Carregando seus pedidos…</p>
+        </div>
+      ) : filtrados.length === 0 ? (
         <div className="text-center py-16 text-slate-500">
           <Stethoscope size={40} className="mx-auto mb-3 opacity-30" />
           <p>Nenhum agendamento encontrado</p>
           <p className="text-xs mt-1">Contrate um especialista parceiro na seção de Parceiros.</p>
+          {!perfil && (
+            <p className="text-xs mt-2 text-amber-500/80">Perfil não vinculado — faça login novamente se os pedidos não aparecerem.</p>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
@@ -120,16 +122,16 @@ export default function MeusPedidosView() {
             const expanded = expandedId === pedido.id;
 
             return (
-              <motion.div key={pedido.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              <div key={pedido.id}
                 className="rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-                <button onClick={() => setExpandedId(expanded ? null : pedido.id)}
+                <button type="button" onClick={() => setExpandedId(expanded ? null : pedido.id)}
                   className="w-full flex items-center gap-3 p-4 hover:bg-white/5 text-left">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl"
                     style={{ background: `${st.color}15` }}>
                     {EMOJIS[esp?.especialidade] || '👨‍⚕️'}
                   </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-bold text-white">{esp?.nome || 'Especialista'}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-bold text-white truncate">{esp?.nome || 'Especialista'}</div>
                     <div className="text-xs text-slate-500">
                       {esp?.especialidade} • {new Date(pedido.dataAgendamento || pedido.createdAt).toLocaleDateString('pt-BR')}
                       {pedido.horario && ` • ${pedido.horario}`}
@@ -179,7 +181,7 @@ export default function MeusPedidosView() {
                     )}
                   </div>
                 )}
-              </motion.div>
+              </div>
             );
           })}
         </div>
