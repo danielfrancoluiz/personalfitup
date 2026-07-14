@@ -25,13 +25,14 @@ function gerarPayloadPix(chave, nome, cidade, valor = null) {
 }
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
+import { resolveProfessorId } from '../../lib/resolve-professor-id';
 import ModalEditarPerfil from '../../components/fitpro/ModalEditarPerfil';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 
 export default function DashboardProfessor({ onNav }) {
-  const { alunos, avaliacoes, planosTreino, periodizacoes, transacoes } = useApp();
+  const { alunos, avaliacoes, planosTreino, periodizacoes, transacoes, professores } = useApp();
   const { user } = useAuth();
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [copied, setCopied] = useState(null);
@@ -40,13 +41,15 @@ export default function DashboardProfessor({ onNav }) {
   const [pixCopied, setPixCopied] = useState(false);
   const [pixDados] = useState(() => { try { return JSON.parse(localStorage.getItem(PIX_DADOS_KEY)) || {}; } catch { return {}; } });
 
-  const [professorId, setProfessorId_] = useState('');
+  const [professorIdAsync, setProfessorIdAsync] = useState('');
   useEffect(() => {
     getCredentials().then(creds => {
       const myCred = creds.find(c => c.id === user?.id);
-      setProfessorId_(myCred?.linkedId || '');
+      if (myCred?.linkedId) setProfessorIdAsync(myCred.linkedId);
     });
   }, [user?.id]);
+
+  const professorId = resolveProfessorId(user, professores) || professorIdAsync;
 
   const meusAlunos = professorId
     ? alunos.filter(a => a.professorId === professorId)

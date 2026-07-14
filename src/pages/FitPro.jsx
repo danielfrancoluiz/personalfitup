@@ -41,6 +41,7 @@ import {
   MSG_ALUNO_INATIVO_BLOQUEADO,
 } from '../lib/aluno-status';
 import { professorPodeAcessarView, MSG_PROFESSOR_PLANO_BLOQUEADO } from '../lib/planos-professor';
+import { resolveProfessorId } from '../lib/resolve-professor-id';
 
 const BG = '#0a0e1a';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -76,7 +77,9 @@ function AuthenticatedApp() {
     ? !alunoAtivoEfetivo(alunoRecord, professorDoAluno, alunosDoProf)
     : false;
 
-  const meuProfessor = isProfessor ? professores.find(p => p.id === user.linkedId) : null;
+  const meuProfessor = isProfessor
+    ? professores.find(p => p.id === resolveProfessorId(user, professores))
+    : null;
 
   const navItems = isAdmin ? adminNav : isProfessor ? professorNav : alunoNav;
   const roleColor = isAdmin ? '#00d4ff' : isProfessor ? '#34d399' : '#a78bfa';

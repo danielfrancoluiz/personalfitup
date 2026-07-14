@@ -6,6 +6,7 @@ import { getCredentials } from '../../lib/fitpro-storage';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import PixProfessorConfig from '../../components/fitpro/PixProfessorConfig';
 import { filterTransacoesProfessor } from '../../lib/professor-scope';
+import { resolveProfessorId } from '../../lib/resolve-professor-id';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -105,17 +106,19 @@ const ALUNO_STATUS_CONFIG = {
 };
 
 export default function FinanceiroView() {
-  const { transacoes, alunos, addTransacao, updateTransacao, deleteTransacao } = useApp();
+  const { transacoes, alunos, professores, addTransacao, updateTransacao, deleteTransacao } = useApp();
   const [confirmando, setConfirmando] = useState(null); // id da transação sendo confirmada
   const { user } = useAuth();
 
-  const [professorId, setProfessorId] = useState('');
+  const [professorIdAsync, setProfessorIdAsync] = useState('');
   useEffect(() => {
     getCredentials().then(creds => {
       const myCred = creds.find(c => c.id === user?.id);
-      setProfessorId(myCred?.linkedId || '');
+      if (myCred?.linkedId) setProfessorIdAsync(myCred.linkedId);
     });
   }, [user?.id]);
+
+  const professorId = resolveProfessorId(user, professores) || professorIdAsync;
 
   const alunosFiltrados = user?.role === 'professor'
     ? alunos.filter(a => professorId && a.professorId === professorId)

@@ -17,6 +17,7 @@ import ModalPlanosBoasVindas from '../../components/fitpro/ModalPlanosBoasVindas
 import PARQVerRespostasModal from '../../components/fitpro/PARQVerRespostasModal';
 import MaskedInput from '../../components/fitpro/MaskedInput';
 import { feedbackPertenceAoProfessor, getIdsAlunosProfessor } from '../../lib/professor-scope';
+import { resolveProfessorId } from '../../lib/resolve-professor-id';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -99,13 +100,16 @@ export default function AlunosView({ roleOverride }) {
   const { user } = useAuth();
   const role = roleOverride || user?.role;
 
-  const [professorId, setProfessorId_] = useState('');
+  const [professorIdAsync, setProfessorIdAsync] = useState('');
   useEffect(() => {
     getCredentials().then(creds => {
       const myCred = creds.find(c => c.id === user?.id);
-      setProfessorId_(myCred?.linkedId || '');
+      if (myCred?.linkedId) setProfessorIdAsync(myCred.linkedId);
     });
   }, [user?.id]);
+
+  // Preferir linkedId da sessão (síncrono) — evita salvar aluno sem professorId
+  const professorId = resolveProfessorId(user, professores) || professorIdAsync;
 
   const [search, setSearch] = useState('');
   const [filtroProf, setFiltroProf] = useState('');
@@ -203,7 +207,12 @@ export default function AlunosView({ roleOverride }) {
 
   const handleSave = async () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
-    const assignedProfessorId = role === 'professor' ? professorId : (form.professorId || '');
+    const assignedProfessorId = role === 'professor'
+      ? (professorId || resolveProfessorId(user, professores))
+      : (form.professorId || '');
+    if (role === 'professor' && !assignedProfessorId) {
+      return alert('Não foi possível vincular o aluno ao seu perfil de professor. Faça login novamente.');
+    }
     if (!editId && role === 'professor' && assignedProfessorId) {
       const prof = professores.find(p => p.id === assignedProfessorId);
       const qtd = contarAlunosProfessor(alunos, assignedProfessorId);
@@ -213,7 +222,14 @@ export default function AlunosView({ roleOverride }) {
         return;
       }
     }
-    const data = { ...form, peso: parseFloat(form.peso) || 0, altura: parseFloat(form.altura) || 0, professorId: assignedProfessorId, ativo: true };
+    const data = {
+      ...form,
+      peso: parseFloat(form.peso) || 0,
+      altura: parseFloat(form.altura) || 0,
+      professorId: assignedProfessorId,
+      ativo: true,
+      createdAt: form.createdAt || new Date().toISOString(),
+    };
     if (editId) {
       await updateAluno(editId, data);
       if (selectedAluno?.id === editId) setSelectedAluno(prev => ({ ...prev, ...data }));
