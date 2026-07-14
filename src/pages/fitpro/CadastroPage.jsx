@@ -7,6 +7,7 @@ import { sanitizeEmailInput, validateEmail } from '../../lib/email-validation';
 import ModalPlanosBoasVindas from '../../components/fitpro/ModalPlanosBoasVindas';
 import BrandLogo from '../../components/fitpro/BrandLogo';
 import MaskedInput from '../../components/fitpro/MaskedInput';
+import { BotaoFalarConosco } from '../../components/fitpro/ContatoPublicoModal';
 import { isDataFuturaIso } from '../../lib/fitpro-masks';
 import { professorTemVagas } from '../../lib/planos-professor';
 
@@ -206,6 +207,7 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
             <div className="flex items-center gap-3 mb-1"><UserCheck size={20} color="#34d399" /><span className="font-bold text-white">Sou Professor</span></div>
             <p className="text-sm text-slate-400 ml-8">Gerencie alunos, crie treinos, avaliações e periodizações</p>
           </button>
+          <BotaoFalarConosco />
           <button onClick={onBack} className="w-full mt-2 py-3 text-sm text-slate-500 hover:text-white transition-colors flex items-center justify-center gap-1">
             <ArrowLeft size={14} />Voltar ao login
           </button>

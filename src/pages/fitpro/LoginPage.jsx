@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Mail, Lock, Eye, EyeOff, LogIn, Shield, UserCheck, Users, AlertCircle,
-  BarChart3, Dumbbell, CalendarRange, Stethoscope, TrendingUp,
+  BarChart3, Dumbbell, CalendarRange, Stethoscope, TrendingUp, MessageCircle,
 } from 'lucide-react';
 import { useAuth } from '../../context/FitProContext';
 import { sanitizeEmailInput } from '../../lib/email-validation';
 import { SESSION_EXPIRED_KEY } from '../../lib/fitpro-storage';
 import EsqueciSenhaModal from '../../components/fitpro/EsqueciSenhaModal';
 import BrandLogo from '../../components/fitpro/BrandLogo';
+import ContatoPublicoModal from '../../components/fitpro/ContatoPublicoModal';
 
 const demoAccounts = [
   { role: 'Admin', email: 'admin@fitpro.com', password: 'admin123', icon: Shield, color: '#00AAFF', desc: 'Acesso total' },
@@ -36,6 +37,7 @@ export default function LoginPage({ onCadastro }) {
   ));
   const [loading, setLoading] = useState(false);
   const [showEsqueci, setShowEsqueci] = useState(false);
+  const [showContato, setShowContato] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -239,11 +241,21 @@ export default function LoginPage({ onCadastro }) {
             <p className="text-xs text-slate-500 mt-3 text-center">
               Aluno ou Professor? Cadastre-se gratuitamente.
             </p>
+            <button
+              type="button"
+              onClick={() => setShowContato(true)}
+              className="w-full mt-4 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all hover:bg-white/[0.03]"
+              style={{ color: '#25d366', border: '1px solid #25d36630', background: '#25d36608' }}
+            >
+              <MessageCircle size={14} />
+              Falar conosco
+            </button>
           </div>
         </motion.div>
       </div>
 
       {showEsqueci && <EsqueciSenhaModal onClose={() => setShowEsqueci(false)} />}
+      {showContato && <ContatoPublicoModal onClose={() => setShowContato(false)} />}
     </div>
   );
 }
