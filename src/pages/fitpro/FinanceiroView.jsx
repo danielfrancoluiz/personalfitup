@@ -155,7 +155,10 @@ export default function FinanceiroView() {
   const totalDespesas = despesas.reduce((acc, t) => acc + (parseFloat(t.valor) || 0), 0);
   const saldo = totalReceitas - totalDespesas;
 
-  const totalPago = filtradas.filter(t => t.status === 'pago').reduce((acc, t) => acc + (parseFloat(t.valor) || 0), 0);
+  // "Recebido" só conta receitas pagas (mensalidade do plano é despesa para o professor)
+  const totalPago = filtradas
+    .filter(t => t.status === 'pago' && (t.categoria === 'receita' || !t.categoria))
+    .reduce((acc, t) => acc + (parseFloat(t.valor) || 0), 0);
   const totalPendente = filtradas.filter(t => t.status === 'pendente').reduce((acc, t) => acc + (parseFloat(t.valor) || 0), 0);
   const totalVencido = filtradas.filter(t => t.status === 'vencido').reduce((acc, t) => acc + (parseFloat(t.valor) || 0), 0);
 

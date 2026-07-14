@@ -15,6 +15,7 @@ import {
 } from '../../lib/aluno-status';
 import ModalPlanosBoasVindas from '../../components/fitpro/ModalPlanosBoasVindas';
 import PARQVerRespostasModal from '../../components/fitpro/PARQVerRespostasModal';
+import MaskedInput from '../../components/fitpro/MaskedInput';
 import { feedbackPertenceAoProfessor, getIdsAlunosProfessor } from '../../lib/professor-scope';
 
 const CARD = '#0d1525';

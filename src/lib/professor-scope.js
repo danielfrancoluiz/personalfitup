@@ -8,12 +8,17 @@ export function getIdsAlunosProfessor(alunos, professorId) {
   );
 }
 
+/** Cobrança do plano da plataforma ao professor (sem aluno vinculado) */
+export function isCobrancaPlanoProfessor(t) {
+  return !!(t?.professorId && !t?.alunoId);
+}
+
 /** Transação pertence ao escopo do professor (alunos vinculados ou cobrança do próprio plano) */
 export function transacaoPertenceAoProfessor(t, professorId, idsAlunos) {
   if (!professorId || !t) return false;
 
   // Cobrança do admin ao professor (assinatura de plano)
-  if (t.professorId && !t.alunoId) return t.professorId === professorId;
+  if (isCobrancaPlanoProfessor(t)) return t.professorId === professorId;
 
   if (t.alunoId) {
     if (!idsAlunos.has(t.alunoId)) return false;
@@ -24,9 +29,15 @@ export function transacaoPertenceAoProfessor(t, professorId, idsAlunos) {
   return t.professorId === professorId;
 }
 
+/**
+ * No financeiro do professor, a mensalidade do plano é despesa (paga à plataforma).
+ * No admin ela permanece receita (mesmo registro no banco).
+ */
 export function filterTransacoesProfessor(transacoes, professorId, alunos) {
   const ids = getIdsAlunosProfessor(alunos, professorId);
-  return (transacoes || []).filter((t) => transacaoPertenceAoProfessor(t, professorId, ids));
+  return (transacoes || [])
+    .filter((t) => transacaoPertenceAoProfessor(t, professorId, ids))
+    .map((t) => (isCobrancaPlanoProfessor(t) ? { ...t, categoria: 'despesa' } : t));
 }
 
 /** Feedback de treino pertence ao professor e ao aluno vinculado */
