@@ -207,12 +207,26 @@ export default function AlunosView({ roleOverride }) {
 
   const handleSave = async () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
-    const assignedProfessorId = role === 'professor'
-      ? (professorId || resolveProfessorId(user, professores))
-      : (form.professorId || '');
-    if (role === 'professor' && !assignedProfessorId) {
-      return alert('Não foi possível vincular o aluno ao seu perfil de professor. Faça login novamente.');
+
+    const resolvedProfId = professorId || resolveProfessorId(user, professores);
+    const alunoAtual = editId ? alunos.find(a => a.id === editId) : null;
+
+    // Permitir cadastro sem professor; nunca apagar vínculo já existente na edição
+    let assignedProfessorId = '';
+    if (role === 'professor') {
+      if (editId) {
+        assignedProfessorId = resolvedProfId || form.professorId || alunoAtual?.professorId || '';
+      } else {
+        // Novo aluno em "Meus Alunos": vincula ao professor logado quando o ID existir
+        assignedProfessorId = resolvedProfId || form.professorId || '';
+      }
+    } else {
+      assignedProfessorId = form.professorId || '';
+      if (editId && alunoAtual?.professorId && !assignedProfessorId) {
+        assignedProfessorId = alunoAtual.professorId;
+      }
     }
+
     if (!editId && role === 'professor' && assignedProfessorId) {
       const prof = professores.find(p => p.id === assignedProfessorId);
       const qtd = contarAlunosProfessor(alunos, assignedProfessorId);
@@ -227,8 +241,8 @@ export default function AlunosView({ roleOverride }) {
       peso: parseFloat(form.peso) || 0,
       altura: parseFloat(form.altura) || 0,
       professorId: assignedProfessorId,
-      ativo: true,
-      createdAt: form.createdAt || new Date().toISOString(),
+      ativo: form.ativo !== false,
+      createdAt: form.createdAt || alunoAtual?.createdAt || new Date().toISOString(),
     };
     if (editId) {
       await updateAluno(editId, data);
