@@ -1,6 +1,29 @@
 # Personal Fit Up
 
-Sistema de gestão para personal trainers — migrado do Base44 para **Supabase** + **Vercel**.
+Sistema de gestão para personal trainers — **Supabase** + **Vercel**.
+
+## Ambientes (Git + Vercel)
+
+| Ambiente | Branch | Deploy Vercel | Banco (hoje) | URL típica |
+|----------|--------|---------------|--------------|------------|
+| **PRD** | `main` | Production | Supabase atual | https://personalfitup.com.br |
+| **DEV** | `dev` | Preview | **mesmo** Supabase (temporário) | URL `*.vercel.app` do preview |
+
+Hoje Production, Preview e Development usam as **mesmas** variáveis (ambiente de teste único). Depois:
+
+1. Crie um segundo projeto no Supabase (ex.: `personalfitup-dev`)
+2. Rode `supabase/migrations/001_initial_schema.sql` nele
+3. No Vercel → Settings → Environment Variables, troque só as vars de **Preview** (e Development) para o projeto DEV
+4. Deixe **Production** apontando para o Supabase de PRD
+
+Fluxo de trabalho:
+
+```text
+feature → merge em dev → testa no preview
+dev estável → PR / merge em main → sobe em produção
+```
+
+Não use tabela `*_teste`. Separe banco por projeto Supabase + vars do Vercel.
 
 ## Stack
 
@@ -14,8 +37,8 @@ Sistema de gestão para personal trainers — migrado do Base44 para **Supabase*
 ### 1. Supabase
 
 1. Crie um projeto em [supabase.com](https://supabase.com)
-2. No **SQL Editor**, execute o arquivo `supabase/migrations/001_initial_schema.sql`
-3. Copie a **URL** e a **anon key** do projeto
+2. No **SQL Editor**, execute `supabase/migrations/001_initial_schema.sql`
+3. Copie a **URL** e a **anon key**
 
 ### 2. Variáveis de ambiente
 
@@ -23,12 +46,10 @@ Sistema de gestão para personal trainers — migrado do Base44 para **Supabase*
 cp .env.example .env
 ```
 
-Preencha:
+Ou puxe do Vercel:
 
-```
-VITE_SUPABASE_URL=https://xxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJ...
-VITE_APP_URL=https://personalfitup.com.br
+```bash
+npx vercel env pull .env.local --environment=development
 ```
 
 ### 3. Rodar localmente
@@ -38,18 +59,23 @@ npm install
 npm run dev
 ```
 
+Trabalhe na branch `dev`:
+
+```bash
+git checkout dev
+git pull
+```
+
 ### 4. Deploy na Vercel
 
-1. Importe o repositório na [Vercel](https://vercel.com)
-2. Adicione as variáveis de ambiente (incluindo `SUPABASE_SERVICE_ROLE_KEY` e `STRIPE_SECRET_KEY` para as API routes)
-3. Configure o domínio `personalfitup.com.br` nas configurações do projeto
+- Push em `main` → Production (`personalfitup.com.br`)
+- Push em `dev` → Preview (ambiente de desenvolvimento)
+- Variáveis: Production / Preview / Development (hoje iguais; depois Preview = Supabase DEV)
 
 ### 5. Migrar dados do Base44 (opcional)
 
-Enquanto o app Base44 ainda estiver ativo:
-
 ```bash
-# No .env, adicione também:
+# No .env:
 BASE44_APP_ID=69ea31515b70bc9ef16762b9
 BASE44_APP_BASE_URL=https://SEU_APP.base44.app
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
@@ -67,12 +93,10 @@ npm run migrate:from-base44
 
 ## Webhook Stripe
 
-Configure no [Dashboard Stripe](https://dashboard.stripe.com/webhooks) apontando para:
-
 ```
 https://personalfitup.com.br/api/stripe-webhook
 ```
 
-Eventos recomendados: `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded`.
+Eventos: `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded`.
 
-Defina `STRIPE_WEBHOOK_SECRET` nas variáveis de ambiente da Vercel (valor `whsec_...` do endpoint).
+Defina `STRIPE_WEBHOOK_SECRET` na Vercel (`whsec_...`).
