@@ -96,7 +96,7 @@ CREATE POLICY "uploads_anon_delete" ON storage.objects
 INSERT INTO credenciais (id, data)
 SELECT * FROM (VALUES
   ('admin-1', '{"email":"admin@fitpro.com","password":"admin123","role":"admin","nome":"Administrador FitPro","linkedId":"","ativo":true,"autoRegistrado":false}'::jsonb),
-  ('prof-demo', '{"email":"professor@fitpro.com","password":"prof123","role":"professor","nome":"Prof. Demo Silva","linkedId":"","ativo":true,"autoRegistrado":false}'::jsonb),
+  ('prof-demo', '{"email":"professor@fitpro.com","password":"prof123","role":"professor","nome":"Prof. Demo Silva","linkedId":"prof-demo-linked","ativo":true,"autoRegistrado":false}'::jsonb),
   ('aluno-demo', '{"email":"aluno@fitpro.com","password":"aluno123","role":"aluno","nome":"Aluno Demo","linkedId":"","ativo":true,"autoRegistrado":false}'::jsonb)
 ) AS v(id, data)
 WHERE NOT EXISTS (SELECT 1 FROM credenciais LIMIT 1);
