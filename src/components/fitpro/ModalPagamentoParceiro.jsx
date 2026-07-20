@@ -18,14 +18,21 @@ export default function ModalPagamentoParceiro({
   onSuccess,
 }) {
   const [pago, setPago] = useState(false);
+  const [metodoPago, setMetodoPago] = useState('credito');
   const [showStripe, setShowStripe] = useState(false);
   const [etapa, setEtapa] = useState(focoInicial === 'descricao' ? 'detalhes' : 'pagamento');
 
   const valor = parseFloat(especialista.valorConsulta) || 0;
   const comissao = valor * (parseFloat(especialista.percentualComissao) || 0) / 100;
 
-  const salvarAgendamento = () => {
+  const salvarAgendamento = (resultado = {}) => {
     const pedidoId = generateId();
+    const metodo = resultado.metodo || 'stripe';
+    const labelMetodo = metodo === 'pix'
+      ? 'PIX via Stripe'
+      : metodo === 'debito'
+        ? 'Débito via Stripe'
+        : 'Cartão via Stripe';
     const novo = {
       id: pedidoId,
       solicitanteId: usuario?.id || '',
@@ -38,7 +45,8 @@ export default function ModalPagamentoParceiro({
       observacoes: `Pago via Stripe — contratado pelo app`,
       valorConsulta: valor,
       comissaoPlataforma: parseFloat(especialista.percentualComissao) || 0,
-      formaPagamento: 'stripe',
+      formaPagamento: metodo === 'pix' ? 'pix' : metodo === 'debito' ? 'debito' : 'credito',
+      metodoPagamentoLabel: labelMetodo,
       createdAt: new Date().toISOString(),
     };
     try {
@@ -55,6 +63,11 @@ export default function ModalPagamentoParceiro({
   }), [especialista.id, especialista.nome, valor]);
 
   if (pago) {
+    const metodoLabel = metodoPago === 'pix'
+      ? 'PIX via Stripe'
+      : metodoPago === 'debito'
+        ? 'Débito via Stripe'
+        : 'Cartão via Stripe';
     return (
       <div className="fixed inset-0 z-[150] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
         <div className="w-full max-w-sm rounded-2xl p-8 text-center" style={{ background: '#0d1525', border: `1px solid ${BORDER}` }}>
@@ -63,9 +76,9 @@ export default function ModalPagamentoParceiro({
           </div>
           <h3 className="text-lg font-bold text-white mb-1">Pagamento Confirmado!</h3>
           <p className="text-sm text-slate-400 mb-1">Sua consulta com <strong className="text-white">{especialista.nome}</strong> foi agendada.</p>
-          <p className="text-xs text-slate-500 mb-4">Você receberá uma confirmação em breve.</p>
+          <p className="text-xs text-slate-500 mb-4">Entre em contato para realizar o agendamento.</p>
           <div className="p-3 rounded-xl mb-5 text-left" style={{ background: 'rgba(255,255,255,0.04)' }}>
-            <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Método</span><span className="text-white">Cartão via Stripe</span></div>
+            <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Método</span><span className="text-white">{metodoLabel}</span></div>
             <div className="flex justify-between text-xs mb-1"><span className="text-slate-400">Valor pago</span><span className="font-bold" style={{ color: '#00E87A' }}>R$ {valor.toFixed(2)}</span></div>
             <div className="flex justify-between text-xs"><span className="text-slate-400">Status</span><span style={{ color: '#00E87A' }}>✓ Aprovado</span></div>
           </div>
@@ -88,11 +101,12 @@ export default function ModalPagamentoParceiro({
           transacao={transacaoVirtual}
           aluno={usuario}
           onClose={() => setShowStripe(false)}
-          onSucesso={() => {
-            const id = salvarAgendamento();
+          onSucesso={(resultado) => {
+            const id = salvarAgendamento(resultado);
+            setMetodoPago(resultado?.metodo || 'credito');
             setShowStripe(false);
             setPago(true);
-            if (onSuccess) onSuccess({ metodo: 'stripe', valor, comissao, id });
+            if (onSuccess) onSuccess({ metodo: resultado?.metodo || 'stripe', valor, comissao, id });
           }}
         />
       ) : (

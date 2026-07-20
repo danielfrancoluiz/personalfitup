@@ -1,6 +1,8 @@
 import Stripe from 'stripe';
 import { filterEntities, getEntity, updateEntity } from './_lib/supabase.js';
 
+const PARCELAS_MAX = 3;
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -45,23 +47,29 @@ export default async function handler(req, res) {
 
     const stripe = new Stripe(stripeSecret, { apiVersion: '2023-10-16' });
     const valorCentavos = Math.round(valorTransacao * 100);
-    const numParcelas = parseInt(parcelas, 10) || 1;
+    const numParcelas = Math.min(Math.max(parseInt(parcelas, 10) || 1, 1), PARCELAS_MAX);
+    const isPix = metodo === 'pix';
 
     const paymentIntentParams = {
       amount: valorCentavos,
       currency: 'brl',
-      payment_method_types: ['card'],
+      payment_method_types: isPix ? ['pix'] : ['card'],
       description: descricaoTransacao,
       metadata: {
         transacaoId: String(transacaoId),
         alunoNome: comprador?.nome || '',
         cpf: comprador?.cpf || '',
         metodo: metodo || 'credito',
-        parcelas: String(numParcelas),
+        parcelas: String(isPix || metodo === 'debito' ? 1 : numParcelas),
       },
     };
 
-    if (metodo !== 'debito' && numParcelas > 1) {
+    if (isPix) {
+      paymentIntentParams.payment_method_options = {
+        pix: { expires_after_seconds: 3600 },
+      };
+    } else if (metodo !== 'debito') {
+      // Habilita parcelamento no cartão (até 3x). O plano escolhido é enviado no confirm do client.
       paymentIntentParams.payment_method_options = {
         card: {
           installments: { enabled: true },
@@ -83,6 +91,8 @@ export default async function handler(req, res) {
       ok: true,
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
+      metodo: isPix ? 'pix' : (metodo || 'credito'),
+      parcelas: String(isPix || metodo === 'debito' ? 1 : numParcelas),
     });
   } catch (error) {
     console.error('stripe-checkout error:', error);

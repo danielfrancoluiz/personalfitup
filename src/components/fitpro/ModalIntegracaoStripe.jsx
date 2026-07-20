@@ -27,7 +27,7 @@ export default function ModalIntegracaoStripe({ onClose }) {
     webhookSecret: config.webhookSecret || '',
     ambiente: config.ambiente || 'producao',
     moeda: config.moeda || 'brl',
-    parcelasMax: config.parcelasMax || '12',
+    parcelasMax: config.parcelasMax || '3',
     metodos: config.metodos || ['card', 'pix', 'boleto'],
   });
   const [showSecret, setShowSecret] = useState(false);
@@ -74,7 +74,7 @@ export default function ModalIntegracaoStripe({ onClose }) {
     const existentes = await base44.entities.ConfiguracaoStripe.list();
     for (const e of existentes) await base44.entities.ConfiguracaoStripe.delete(e.id);
     setConfig({});
-    setForm({ publishableKey: '', secretKey: '', webhookSecret: '', ambiente: 'producao', moeda: 'brl', parcelasMax: '12', metodos: ['card', 'pix', 'boleto'] });
+    setForm({ publishableKey: '', secretKey: '', webhookSecret: '', ambiente: 'producao', moeda: 'brl', parcelasMax: '3', metodos: ['card', 'pix', 'boleto'] });
   };
 
   const toggleMetodo = (m) => {
@@ -464,7 +464,7 @@ export default function ModalIntegracaoStripe({ onClose }) {
                   onChange={e => setForm(f => ({ ...f, parcelasMax: e.target.value }))}
                   className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
                   style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  {['1','2','3','4','6','9','12'].map(n => (
+                  {['1','2','3'].map(n => (
                     <option key={n} value={n}>{n === '1' ? 'À vista' : `Até ${n}x`}</option>
                   ))}
                 </select>

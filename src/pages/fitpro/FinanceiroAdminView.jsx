@@ -752,7 +752,7 @@ export default function FinanceiroAdminView() {
                     {[
                       { label: 'Ambiente', value: cfg.ambiente === 'producao' ? '🚀 Produção' : '🧪 Teste' },
                       { label: 'Métodos', value: `${(cfg.metodos || []).length} ativos` },
-                      { label: 'Parcelas', value: `Até ${cfg.parcelasMax || 12}x` },
+                      { label: 'Parcelas', value: `Até ${cfg.parcelasMax || 3}x` },
                     ].map(k => (
                       <div key={k.label} className="p-2.5 rounded-xl text-center" style={{ background: '#635bff08', border: '1px solid #635bff20' }}>
                         <div className="text-sm font-bold text-white">{k.value}</div>

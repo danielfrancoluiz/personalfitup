@@ -18,7 +18,12 @@ const EMOJIS = {
   Cardiologista: '❤️', Ortopedista: '🦴', 'Professor de Educação Física': '💪', 'Personal Trainer': '🏋️',
 };
 
-const METODO_LABEL = { pix: 'PIX', credito: 'Cartão de Crédito', debito: 'Cartão de Débito', stripe: 'Cartão via Stripe' };
+const METODO_LABEL = {
+  pix: 'PIX via Stripe',
+  credito: 'Cartão via Stripe',
+  debito: 'Débito via Stripe',
+  stripe: 'Cartão via Stripe',
+};
 
 function carregarPedidos() {
   try { return JSON.parse(localStorage.getItem('fitpro_pedidos_especialistas') || '[]'); }
@@ -170,10 +175,12 @@ export default function MeusPedidosView() {
                       </div>
                     </div>
                     {esp?.whatsapp && (
-                      <a href={`https://wa.me/${esp.whatsapp}`} target="_blank" rel="noreferrer"
+                      <a href={`https://wa.me/${esp.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer"
                         className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
                         style={{ background: '#25d36620', color: '#25d366', border: '1px solid #25d36630' }}>
-                        📲 Entrar em contato via WhatsApp
+                        {(pedido.status === 'confirmado' || pedido.status === 'realizado')
+                          ? '📲 Entre em contato para realizar o agendamento'
+                          : '📲 Entrar em contato via WhatsApp'}
                       </a>
                     )}
                     {pedido.observacoes && (
